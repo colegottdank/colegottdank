@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
-import NavBar from "./components/molecules/NavBar/index.jsx";
+import Home from "./components/pages/Home/index";
 import "./styles/app.css";
 
 class App extends React.Component {
@@ -8,7 +8,7 @@ class App extends React.Component {
     return (
       <BrowserRouter>
         <div className="app_wrapper">
-          <NavBar />
+          <Home />
         </div>
       </BrowserRouter>
     );
