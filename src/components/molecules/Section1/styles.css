@@ -1,0 +1,11 @@
+/** Fonts **/
+/** Colors **/
+.section1-wrapper-div {
+  height: 40em;
+  width: 100%;
+  background-color: white;
+  display: flex;
+  flex: 1 1 1;
+  justify-content: center; }
+  .section1-wrapper-div .section1-cartoonselfie {
+    height: 40em; }

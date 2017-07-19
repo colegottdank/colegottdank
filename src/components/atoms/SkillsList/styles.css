@@ -1,0 +1,13 @@
+/** Fonts **/
+/** Colors **/
+.skillslist-wrapper-div .skillslist-p {
+  font-size: 100%;
+  display: inline-block;
+  padding: .5em;
+  margin: 0; }
+  .skillslist-wrapper-div .skillslist-p:nth-child(even) {
+    color: #23a7bc; }
+  .skillslist-wrapper-div .skillslist-p:nth-child(odd) {
+    color: #c00047; }
+  .skillslist-wrapper-div .skillslist-p:nth-child(3n) {
+    color: #66d9ef; }
