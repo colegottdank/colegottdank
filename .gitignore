@@ -18,7 +18,6 @@
 
 # extra
 /.eslintrc.json
-/gitignore
 /package-lock.json
 /yarn.lock
 

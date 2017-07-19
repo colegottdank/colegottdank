@@ -1,9 +1,16 @@
-import React from 'react';
+import React from "react";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
+import NavBar from "./components/molecules/NavBar/index.jsx";
+import "./styles/app.css";
 
 class App extends React.Component {
   render() {
     return (
-      <h1>Hello!</h1>
+      <BrowserRouter>
+        <div className="app_wrapper">
+          <NavBar />
+        </div>
+      </BrowserRouter>
     );
   }
 }
