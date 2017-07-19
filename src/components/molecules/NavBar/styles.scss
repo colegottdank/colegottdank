@@ -1,0 +1,54 @@
+@import '../../../styles/variables.scss';
+
+.navbar__wrapper {
+	width: 100%;
+	height: 4em;
+	background-color: $primary-dark;
+
+	.navbar__nav{
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+.navroutes__wrapper__ul {
+	list-style-type: none;
+	padding: 0;
+
+	.navroutes__li{
+		display: inline-block;
+
+		height: 100%;
+		width: 10em;
+		text-align: center;
+	}
+
+	.navroutes--navlink{
+		color: $primary-text;
+		font-size: 120%;
+
+		text-decoration: none;
+	}
+
+	.navroutes--navlink--active{
+		color: $secondary;
+	}
+}
+
+
+
+li{
+
+	flex: auto;
+
+}
+
+
+
+
+
+
+
