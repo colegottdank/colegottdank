@@ -26,6 +26,12 @@ class Section2 extends React.Component {
 					className="section2-arrow-icon arrow3"
 					name="arrow down"
 				/>
+				<Icon
+					id="icon"
+					onClick={this.scroll.bind(this, 'section1-wrapper')}
+					className="section2-arrow-icon arrow3"
+					name="arrow down"
+				/>
 			</section>
 		);
 	}
