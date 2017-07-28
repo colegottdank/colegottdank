@@ -2,7 +2,7 @@
   "name": "portfolio",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://colegottdank.github.io",
+  "homepage": ".",
   "dependencies": {
     "ajv": "^5.2.2",
     "ajv-keywords": "^2.1.0",
