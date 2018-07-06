@@ -1,8 +1,8 @@
 {
   "main.css": "static/css/main.40899448.css",
   "main.css.map": "static/css/main.40899448.css.map",
-  "main.js": "static/js/main.2ecc69c1.js",
-  "main.js.map": "static/js/main.2ecc69c1.js.map",
+  "main.js": "static/js/main.d00ca865.js",
+  "main.js.map": "static/js/main.d00ca865.js.map",
   "static/media/colegottdank_transparent.png": "static/media/colegottdank_transparent.410b86e3.png",
   "static/media/decoupled.jpg": "static/media/decoupled.fc8e0110.jpg",
   "static/media/development.jpg": "static/media/development.4a7f481b.jpg",
@@ -13,7 +13,7 @@
   "static/media/fontawesome-webfont.woff2?v=4.7.0": "static/media/fontawesome-webfont.af7ae505.woff2",
   "static/media/fontawesome-webfont.woff?v=4.7.0": "static/media/fontawesome-webfont.fee66e71.woff",
   "static/media/logo_transparent.png": "static/media/logo_transparent.a27d7f90.png",
-  "static/media/personal_page.png": "static/media/personal_page.2fd8e58c.png",
+  "static/media/personal_page.png": "static/media/personal_page.ffd5d631.png",
   "static/media/responsive.jpg": "static/media/responsive.b36ea111.jpg",
   "static/media/rizlavie.png": "static/media/rizlavie.1cff11b9.png",
   "static/media/slick.eot": "static/media/slick.ced611da.eot",
@@ -21,5 +21,6 @@
   "static/media/slick.ttf": "static/media/slick.d41f55a7.ttf",
   "static/media/slick.woff": "static/media/slick.b7c9e1e4.woff",
   "static/media/software.jpg": "static/media/software.e1e88743.jpg",
-  "static/media/speed.jpg": "static/media/speed.b40b2099.jpg"
+  "static/media/speed.jpg": "static/media/speed.b40b2099.jpg",
+  "static/media/svcred.png": "static/media/svcred.8c510247.png"
 }
