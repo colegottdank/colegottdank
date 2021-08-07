@@ -1,5 +1,5 @@
 # colegottdank
-Personal website. Coded using create-react app. 
+Personal website. Coded using create-react app and eventually ejected to support CSS modules.
 
 Uses:
 * React.Js
