@@ -24,7 +24,7 @@ const videoRegistry: Record<number, Video> = {
   // For You Feed Videos (IDs 1-100)
   1: {
     id: 1,
-    url: "/videos/subway-surfers.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/subway-surfers.mp4",
     caption: "SUBWAY SURFERS GAMEPLAY AT 3AM WHILE LISTENING TO THE LORE 🏃‍♂️🚇 NAHHHH THE DOPAMINE IS IMMACULATE. I LITERALLY CANNOT STOP WATCHING. MY BRAIN IS COOKED FR FR",
     username: "subway_surfer_pro",
     name: "SUBWAY SURFER PRO",
@@ -41,7 +41,7 @@ const videoRegistry: Record<number, Video> = {
   },
   2: {
     id: 2,
-    url: "/videos/satisfying-soap.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/satisfying-soap.mp4",
     caption: "SOAP CUTTING ASMR AT 3AM AND NOW MY BRAIN IS PERMANENTLY BROKEN 🧼✂️ THE CRUNCHY SOUNDS ARE SO SATISFYING I CANT STOP WATCHING. THE DOPAMINE IS IMMACULATE",
     username: "soap_cutting_asmr",
     name: "SOAP CUTTING ASMR",
@@ -58,7 +58,7 @@ const videoRegistry: Record<number, Video> = {
   },
   3: {
     id: 3,
-    url: "/videos/minecraft-parkour.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/minecraft-parkour.mp4",
     caption: "MINECRAFT PARKOUR WITH SHADERS IS THE MOST BEAUTIFUL THING IVE EVER SEEN 🎮✨ THE BLOCKS ARE SO SATISFYING. I CANT STOP JUMPING. MY BRAIN IS PERMANENTLY IN PARKOUR MODE",
     username: "mc_parkour_god",
     name: "MC PARKOUR GOD",
@@ -75,7 +75,7 @@ const videoRegistry: Record<number, Video> = {
   },
   4: {
     id: 4,
-    url: "/videos/gta-stunts.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/gta-stunts.mp4",
     caption: "GTA V IMPOSSIBLE STUNT RACE AND BRO ACTUALLY MADE IT 🏎️💨 NAHHHH THE PHYSICS IN THIS GAME ARE UNHINGED. HOW DID HE NOT EXPLODE. IM SCREAMING",
     username: "gta_stunts_daily",
     name: "GTA STUNTS DAILY",
@@ -92,7 +92,7 @@ const videoRegistry: Record<number, Video> = {
   },
   5: {
     id: 5,
-    url: "/videos/kinetic-sand.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/kinetic-sand.mp4",
     caption: "KINETIC SAND CUTTING ASMR IS THE ONLY THING KEEPING ME SANE 🏖️✂️ THE COLORS ARE SO SATISFYING. THE SOUNDS ARE IMMACULATE. I HAVE WATCHED THIS 847 TIMES",
     username: "sand_cutting_asmr",
     name: "SAND CUTTING ASMR",
@@ -109,7 +109,7 @@ const videoRegistry: Record<number, Video> = {
   },
   6: {
     id: 6,
-    url: "/videos/temple-run.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/temple-run.mp4",
     caption: "TEMPLE RUN GAMEPLAY HITS DIFFERENT AT 3AM 🏃‍♂️🏛️ THE NOSTALGIA IS UNHINGED. I USED TO PLAY THIS ON MY IPOD TOUCH. THE MONKEYS ARE STILL CHASING ME IN MY DREAMS",
     username: "temple_run_og",
     name: "TEMPLE RUN OG",
@@ -128,7 +128,7 @@ const videoRegistry: Record<number, Video> = {
   // Following Feed Videos (IDs 101-200)
   101: {
     id: 101,
-    url: "/videos/subway-surfers.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/subway-surfers.mp4",
     caption: "POV: you put subway surfers on the bottom half while watching a reddit story and now you cant stop 🏃‍♂️📖 THE PRODUCTIVITY IS NEGATIVE. IM COOKED",
     username: "subway_addict",
     name: "SUBWAY ADDICT",
@@ -145,7 +145,7 @@ const videoRegistry: Record<number, Video> = {
   },
   102: {
     id: 102,
-    url: "/videos/satisfying-slime.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/satisfying-slime.mp4",
     caption: "SLIME STRETCHING COMPILATION AND MY BRAIN HAS OFFICIALLY LEFT THE CHAT 🫠🎨 THE WAY IT MOVES IS ILLEGAL. THE COLORS ARE INSANE. I NEED TO TOUCH SLIME RN",
     username: "slime_stretching",
     name: "SLIME STRETCHING",
@@ -162,7 +162,7 @@ const videoRegistry: Record<number, Video> = {
   },
   103: {
     id: 103,
-    url: "/videos/pressure-washing.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/pressure-washing.mp4",
     caption: "PRESSURE WASHING A DRIVEWAY THATS BEEN DIRTY FOR 10 YEARS 💦😱 THE TRANSFORMATION IS UNREAL. THE BEFORE AND AFTER GAVE ME GOOSEBUMPS. THIS IS BETTER THAN THERAPY",
     username: "powerwash_pro",
     name: "POWERWASH PRO",
@@ -179,7 +179,7 @@ const videoRegistry: Record<number, Video> = {
   },
   104: {
     id: 104,
-    url: "/videos/wood-turning.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/wood-turning.mp4",
     caption: "WOOD TURNING ON A LATHE IS THE MOST SATISFYING THING HUMANS HAVE EVER CREATED 🪵🔄 THE SHAVINGS. THE REVEAL. THE SMOOTH FINISH. I AM MESMERIZED BEYOND REPAIR",
     username: "wood_turning_asmr",
     name: "WOOD TURNING ASMR",
@@ -196,7 +196,7 @@ const videoRegistry: Record<number, Video> = {
   },
   105: {
     id: 105,
-    url: "/videos/laser-cutting.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/laser-cutting.mp4",
     caption: "LASER CUTTING THROUGH METAL LIKE ITS BUTTER 🔴✂️ THE PRECISION IS INHUMAN. THE SPARKS ARE BEAUTIFUL. I HAVE FOUND MY NEW OBSESSION AND ITS LASERS",
     username: "laser_precision",
     name: "LASER PRECISION",
@@ -213,7 +213,7 @@ const videoRegistry: Record<number, Video> = {
   },
   106: {
     id: 106,
-    url: "/videos/rizz-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/rizz-meme.mp4",
     caption: "THIS MAN HAS MORE RIZZ THAN SHOULD BE LEGALLY ALLOWED 🗣️💀 THE CONFIDENCE. THE DELIVERY. THE AUDACITY. I JUST WITNESSED PEAK HUMAN EVOLUTION. RIZZ GOD CONFIRMED",
     username: "rizz_compilation",
     name: "RIZZ COMPILATION",
@@ -230,7 +230,7 @@ const videoRegistry: Record<number, Video> = {
   },
   107: {
     id: 107,
-    url: "/videos/cake-decorating.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/cake-decorating.mp4",
     caption: "THIS CAKE DECORATOR IS NOT HUMAN THERES NO WAY 🎂👽 THE DETAIL ON THE FLOWERS IS INSANE. EVERY PETAL IS PERFECT. REPORT THIS PERSON FOR BEING TOO TALENTED",
     username: "cake_alien",
     name: "CAKE ALIEN",
@@ -247,7 +247,7 @@ const videoRegistry: Record<number, Video> = {
   },
   108: {
     id: 108,
-    url: "/videos/pottery-making.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/pottery-making.mp4",
     caption: "POTTERY ON THE WHEEL IS SO THERAPEUTIC I FORGOT ALL MY PROBLEMS 🏺🤲 THE WAY THE CLAY FORMS IS PURE MAGIC. THE SYMMETRY. THE GLAZE. IM ENROLLING IN POTTERY CLASS",
     username: "pottery_therapy",
     name: "POTTERY THERAPY",
@@ -264,7 +264,7 @@ const videoRegistry: Record<number, Video> = {
   },
   109: {
     id: 109,
-    url: "/videos/spongebob-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/spongebob-meme.mp4",
     caption: "SPONGEBOB OUT OF CONTEXT IS THE PUREST FORM OF COMEDY 🧽😂 NO SHOW HAS EVER BEEN THIS UNINTENTIONALLY UNHINGED. THE MEMES WRITE THEMSELVES. PEAK BRAINROT",
     username: "spongebob_brainrot",
     name: "SPONGEBOB BRAINROT",
@@ -281,7 +281,7 @@ const videoRegistry: Record<number, Video> = {
   },
   110: {
     id: 110,
-    url: "/videos/3d-printing.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/3d-printing.mp4",
     caption: "3D PRINTING TIMELAPSE AND THE RESULT IS INSANE 🖨️🤯 WATCHING IT BUILD LAYER BY LAYER IS SO HYPNOTIC. THE FUTURE IS NOW. WE ARE LIVING IN THE FUTURE",
     username: "3d_print_daily",
     name: "3D PRINT DAILY",
@@ -298,7 +298,7 @@ const videoRegistry: Record<number, Video> = {
   },
   111: {
     id: 111,
-    url: "/videos/minecraft-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/minecraft-meme.mp4",
     caption: "MINECRAFT MEME COMPILATION THAT TURNED MY LAST BRAINCELL INTO A CREEPER 🟩💥 THE EDITS ARE TOO GOOD. THE SOUND EFFECTS. IM CRYING. THIS IS WHAT PEAK CONTENT LOOKS LIKE",
     username: "mc_meme_lord",
     name: "MC MEME LORD",
@@ -315,7 +315,7 @@ const videoRegistry: Record<number, Video> = {
   },
   112: {
     id: 112,
-    url: "/videos/calligraphy.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/calligraphy.mp4",
     caption: "CALLIGRAPHY SO PERFECT IT LOOKS PRINTED 🖊️✨ THE INK FLOW. THE LETTER SPACING. THE CONSISTENCY. THIS PERSON'S HANDS ARE A NATIONAL TREASURE. IM IN AWE",
     username: "calligraphy_art",
     name: "CALLIGRAPHY ART",
@@ -334,7 +334,7 @@ const videoRegistry: Record<number, Video> = {
   // Liked Videos (IDs 1001-1100) - These are videos the user liked from other creators
   1001: {
     id: 1001,
-    url: "/videos/skibidi-toilet.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/skibidi-toilet.mp4",
     caption: "SKIBIDI TOILET SEASON 47 JUST DROPPED AND THE PLOT TWIST IS INSANE 🚽🤯 WHO WROTE THIS. WHO APPROVED THIS. THE CINEMA IS UNMATCHED. OSCARS WHEN??",
     username: "skibidi_cinema",
     name: "SKIBIDI CINEMA",
@@ -351,7 +351,7 @@ const videoRegistry: Record<number, Video> = {
   },
   1002: {
     id: 1002,
-    url: "/videos/among-us.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/among-us.mp4",
     caption: "AMONG US IN REAL LIFE BUT EVERYONE IS SUS 📮💀 WE PLAYED AMONG US IRL AND BRO ACTUALLY VENTED IN FRONT OF EVERYONE. THE BETRAYAL. THE LIES. AMOGUS IS A LIFESTYLE",
     username: "amogus_irl",
     name: "AMOGUS IRL",
@@ -368,7 +368,7 @@ const videoRegistry: Record<number, Video> = {
   },
   1003: {
     id: 1003,
-    url: "/videos/family-guy-moments.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/family-guy-moments.mp4",
     caption: "FAMILY GUY MOMENTS THAT WOULD GET CANCELLED TODAY 😂💀 HOW DID THEY GET AWAY WITH THIS. PETER GRIFFIN IS THE MOST UNHINGED CHARACTER IN TV HISTORY. NO CAP",
     username: "fg_moments_daily",
     name: "FG MOMENTS DAILY",
@@ -385,7 +385,7 @@ const videoRegistry: Record<number, Video> = {
   },
   1004: {
     id: 1004,
-    url: "/videos/candy-making.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/candy-making.mp4",
     caption: "CANDY MAKING FACTORY TOUR AND NOW I UNDERSTAND WHY WILLY WONKA WAS UNHINGED 🍭🏭 THE MACHINES ARE HYPNOTIC. THE SUGAR PULLING IS ART. I WANT TO LIVE HERE",
     username: "candy_obsessed",
     name: "CANDY OBSESSED",
@@ -402,7 +402,7 @@ const videoRegistry: Record<number, Video> = {
   },
   1005: {
     id: 1005,
-    url: "/videos/sigma-edit.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/sigma-edit.mp4",
     caption: "SIGMA EDIT COMPILATION THAT TURNED ME INTO A DIFFERENT PERSON 🐺💯 THE PHONK. THE SLOW MO. THE QUOTES. I JUST QUIT MY JOB AND STARTED A GRINDSET. THIS IS NOT A PHASE MOM",
     username: "sigma_daily",
     name: "SIGMA DAILY",
@@ -419,7 +419,7 @@ const videoRegistry: Record<number, Video> = {
   },
   1006: {
     id: 1006,
-    url: "/videos/spongebob-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/spongebob-meme.mp4",
     caption: "SPONGEBOB MEMES THAT LIVE IN MY HEAD RENT FREE 🧽💀 THE KRUSTY KRAB VS CHUM BUCKET MEME FORMAT IS THE GREATEST INVENTION OF MANKIND. CHANGE MY MIND",
     username: "spongebob_daily",
     name: "SPONGEBOB DAILY",
@@ -438,7 +438,7 @@ const videoRegistry: Record<number, Video> = {
   // Saved Videos (IDs 2001-2100) - These are videos the user saved from other creators
   2001: {
     id: 2001,
-    url: "/videos/minecraft-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/minecraft-meme.mp4",
     caption: "saving this minecraft meme compilation for when i need to feel something 🟩💎 the creeper jumpscare edit at 0:23 literally gave me ptsd. peak gaming content",
     username: "mc_meme_saves",
     name: "MC MEME SAVES",
@@ -455,7 +455,7 @@ const videoRegistry: Record<number, Video> = {
   },
   2002: {
     id: 2002,
-    url: "/videos/rizz-meme.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/rizz-meme.mp4",
     caption: "saving this rizz compilation because i need to study the technique 🗣️📝 this man is operating on a different frequency. the rizz is too powerful. im taking notes",
     username: "rizz_student",
     name: "RIZZ STUDENT",
@@ -472,7 +472,7 @@ const videoRegistry: Record<number, Video> = {
   },
   2003: {
     id: 2003,
-    url: "/videos/hydraulic-press.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/hydraulic-press.mp4",
     caption: "saving this hydraulic press compilation for when i need to feel powerful 🔨💪 watching things get crushed is oddly therapeutic. dont judge me",
     username: "press_fan",
     name: "PRESS FAN",
@@ -489,7 +489,7 @@ const videoRegistry: Record<number, Video> = {
   },
   2004: {
     id: 2004,
-    url: "/videos/candy-making.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/candy-making.mp4",
     caption: "saving this candy making video because the sugar work is genuinely art 🍬🎨 gonna show this to people who say tiktok is brainrot. this is CULTURE",
     username: "candy_culture",
     name: "CANDY CULTURE",
@@ -508,7 +508,7 @@ const videoRegistry: Record<number, Video> = {
   // Current User's Videos (IDs 9001-9100)
   9001: {
     id: 9001,
-    url: "/videos/subway-surfers.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/subway-surfers.mp4",
     caption: "FIRST VIDEO LETS GOOO 🏃‍♂️💯 posting subway surfers gameplay as my first vid because the algorithm NEEDS this content. ratio + cope + seethe",
     username: "currentuser",
     name: "You",
@@ -525,7 +525,7 @@ const videoRegistry: Record<number, Video> = {
   },
   9002: {
     id: 9002,
-    url: "/videos/gta-stunts.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/gta-stunts.mp4",
     caption: "HIT THE MOST INSANE GTA STUNT OF MY LIFE 🏎️💨 THE CAR DID A TRIPLE BACKFLIP OFF THE RAMP AND LANDED PERFECTLY. IM LITERALLY SHAKING. PEAK GAMING MOMENT",
     username: "currentuser",
     name: "You",
@@ -542,7 +542,7 @@ const videoRegistry: Record<number, Video> = {
   },
   9003: {
     id: 9003,
-    url: "/videos/kinetic-sand.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/kinetic-sand.mp4",
     caption: "kinetic sand cutting ASMR that i filmed at 3am because the vibes were immaculate 🏖️✂️ the crunch. the colors. im never sleeping again. this is my life now",
     username: "currentuser",
     name: "You",
@@ -561,7 +561,7 @@ const videoRegistry: Record<number, Video> = {
   // EXTRA BRAINROT VIDEOS (IDs 7-20)
   7: {
     id: 7,
-    url: "/videos/skibidi-toilet.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/skibidi-toilet.mp4",
     caption: "SKIBIDI TOILET SEASON 73 JUST DROPPED AND THE LORE IS DEEPER THAN GAME OF THRONES 🚽⚔️ CAMERAMAN VS SCIENTIST TOILET THE FINAL ARC. WHO IS WRITING THIS. OSCAR WORTHY CINEMA",
     username: "skibidi_lore_master",
     name: "SKIBIDI LORE MASTER",
@@ -578,7 +578,7 @@ const videoRegistry: Record<number, Video> = {
   },
   8: {
     id: 8,
-    url: "/videos/cake-decorating.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/cake-decorating.mp4",
     caption: "CAKE DECORATING THAT IS SO SATISFYING IT SHOULD BE ILLEGAL 🎂✨ HOW ARE THEIR HANDS SO STEADY. THE FROSTING IS IMMACULATE. I CANT LOOK AWAY. MY BRAIN IS COOKED",
     username: "cake_perfection",
     name: "CAKE PERFECTION",
@@ -595,7 +595,7 @@ const videoRegistry: Record<number, Video> = {
   },
   9: {
     id: 9,
-    url: "/videos/family-guy-moments.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/family-guy-moments.mp4",
     caption: "FAMILY GUY OUT OF CONTEXT MOMENTS THAT BROKE MY BRAIN PERMANENTLY 😂💀 PETER GRIFFIN DID NOT JUST DO THAT. HOW DID THIS AIR ON TELEVISION. THE WRITERS ARE UNHINGED",
     username: "fg_unhinged",
     name: "FG UNHINGED",
@@ -612,7 +612,7 @@ const videoRegistry: Record<number, Video> = {
   },
   10: {
     id: 10,
-    url: "/videos/sigma-edit.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/sigma-edit.mp4",
     caption: "SIGMA MALE PHONK EDIT THAT GOES SO HARD IT SHOULD BE CLASSIFIED AS A WEAPON 🐺🔥 THE SLOW MO. THE BASS. THE GRINDSET. I JUST BECAME 47% MORE PRODUCTIVE WATCHING THIS",
     username: "sigma_phonk_edits",
     name: "SIGMA PHONK EDITS",
@@ -629,7 +629,7 @@ const videoRegistry: Record<number, Video> = {
   },
   11: {
     id: 11,
-    url: "/videos/among-us.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/among-us.mp4",
     caption: "AMONG US ANIMATION BUT ITS ACTUALLY PEAK CINEMA 📮💀 THE IMPOSTER REVEAL HAD ME SCREAMING. SUS DOESNT EVEN BEGIN TO DESCRIBE IT. THE BETRAYAL. THE DRAMA. AMOGUS",
     username: "amogus_cinema",
     name: "AMOGUS CINEMA",
@@ -646,7 +646,7 @@ const videoRegistry: Record<number, Video> = {
   },
   12: {
     id: 12,
-    url: "/videos/glass-blowing.mp4",
+    url: "https://github.com/colegottdank/colegottdank/releases/download/v1.0/glass-blowing.mp4",
     caption: "GLASS BLOWING IS LITERALLY MAGIC AND YOU CANNOT CONVINCE ME OTHERWISE 🔥🫧 THE WAY THE MOLTEN GLASS MOVES IS HYPNOTIC. I HAVE BEEN WATCHING FOR 6 HOURS. HELP",
     username: "glass_magic",
     name: "GLASS MAGIC",
