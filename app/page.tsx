@@ -1026,16 +1026,44 @@ function NavBtn({ icon, label, active = false, onClick }: { icon: React.ReactNod
 function NatPortfolio() {
   return (
     <div className="w-full h-full bg-white overflow-y-auto">
-      <div className="max-w-[720px] mx-auto py-12 px-8" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
-        <h1 className="text-[28px] font-bold text-black mb-8">Cole Gottdank</h1>
-        <p className="text-[17px] mb-3">Some things about me:</p>
-        <ul className="list-disc pl-6 mb-7 text-[17px] leading-relaxed">
-          <li className="mb-1">Shipped 800+ commits to production at <a href="https://helicone.ai" className="text-[#0000EE] underline">Helicone</a>, an AI Gateway handling billions of LLM requests</li>
-          <li className="mb-1">Y Combinator W23 batch</li>
-          <li className="mb-1">Started coding at 14, building Minecraft plugins</li>
-          <li className="mb-1">Dropped out to build Helicone full-time</li>
-        </ul>
-        <p className="text-[13px] text-gray-500 mt-12">© 2025 Cole Gottdank</p>
+      <div className="max-w-[600px] mx-auto py-20 px-8 md:px-12">
+        {/* Name */}
+        <h1 className="text-[32px] md:text-[40px] font-normal text-black mb-6 tracking-[-0.02em]" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
+          Cole Gottdank
+        </h1>
+
+        {/* Bio */}
+        <div className="text-[17px] leading-[1.7] text-black/90" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
+          <p className="mb-6">
+            I'm a software engineer who shipped 800+ commits to production at{" "}
+            <a href="https://helicone.ai" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
+              Helicone
+            </a>
+            , an AI Gateway handling billions of LLM requests.
+          </p>
+
+          <p className="mb-6">
+            Y Combinator W23. Started coding at 14 building Minecraft plugins. Dropped out to build Helicone full-time.
+          </p>
+        </div>
+
+        {/* Links */}
+        <div className="flex gap-6 mt-12 text-[14px]" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+          <a href="https://github.com/colegottdank" className="text-black/60 hover:text-black transition-colors">
+            GitHub
+          </a>
+          <a href="https://twitter.com/colegottdank" className="text-black/60 hover:text-black transition-colors">
+            Twitter
+          </a>
+          <a href="https://linkedin.com/in/colegottdank" className="text-black/60 hover:text-black transition-colors">
+            LinkedIn
+          </a>
+        </div>
+
+        {/* Footer */}
+        <p className="text-[13px] text-black/40 mt-20" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+          © 2025
+        </p>
       </div>
     </div>
   );
