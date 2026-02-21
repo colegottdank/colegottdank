@@ -1024,6 +1024,11 @@ function NavBtn({ icon, label, active = false, onClick }: { icon: React.ReactNod
 
 // Portfolio Component
 function NatPortfolio() {
+  const blogPosts = [
+    { title: "CLI beats MCP. Here's why.", date: "Feb 2026", slug: "cli-vs-mcp" },
+    { title: "GEO is SEO for AI search. It's also fake.", date: "Feb 2026", slug: "geo-is-fake" },
+  ];
+
   return (
     <div className="w-full h-full bg-white overflow-y-auto">
       <div className="max-w-[600px] mx-auto py-20 px-8 md:px-12">
@@ -1035,24 +1040,36 @@ function NatPortfolio() {
         {/* Bio */}
         <div className="text-[17px] leading-[1.7] text-black/90" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
           <p className="mb-6">
-            I'm a software engineer who shipped 800+ commits to production at{" "}
+            Engineer turned GTM at{" "}
             <a href="https://helicone.ai" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
               Helicone
             </a>
-            , an AI Gateway handling billions of LLM requests.
+            , where we handle billions of LLM requests. Started coding at 14 building Minecraft plugins.
           </p>
 
           <p className="mb-6">
-            Y Combinator W23. Started coding at 14 building Minecraft plugins. Dropped out to build Helicone full-time.
+            Currently building with{" "}
+            <a href="https://github.com/anthropics/claude-code" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
+              Claude Code
+            </a>
+            . Side projects:{" "}
+            <a href="https://debateai.org" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
+              DebateAI
+            </a>
+            ,{" "}
+            <a href="https://dailyspud.colegottdank.com" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
+              Daily Spud
+            </a>
+            . Interested in AI agents, learning to cook the Kenji way, 3D printing, and getting better at basketball. Washed up Rocket League grand champ.
           </p>
         </div>
 
         {/* Links */}
-        <div className="flex gap-6 mt-12 text-[14px]" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+        <div className="flex gap-6 mt-8 text-[14px]" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
           <a href="https://github.com/colegottdank" className="text-black/60 hover:text-black transition-colors">
             GitHub
           </a>
-          <a href="https://twitter.com/colegottdank" className="text-black/60 hover:text-black transition-colors">
+          <a href="https://x.com/coleywoleyyy" className="text-black/60 hover:text-black transition-colors">
             Twitter
           </a>
           <a href="https://linkedin.com/in/colegottdank" className="text-black/60 hover:text-black transition-colors">
@@ -1060,9 +1077,30 @@ function NatPortfolio() {
           </a>
         </div>
 
+        {/* Divider */}
+        <div className="border-t border-black/10 mt-16 pt-12">
+          {/* Writing Section */}
+          <h2 className="text-[14px] text-black/40 uppercase tracking-[0.1em] mb-6" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+            Writing
+          </h2>
+          <ul className="space-y-4" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
+            {blogPosts.map((post) => (
+              <li key={post.slug}>
+                <a
+                  href={`/blog/${post.slug}`}
+                  className="group flex items-baseline justify-between text-[17px] text-black/90 hover:text-black transition-colors"
+                >
+                  <span className="group-hover:underline underline-offset-2">{post.title}</span>
+                  <span className="text-[14px] text-black/40 ml-4">{post.date}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {/* Footer */}
         <p className="text-[13px] text-black/40 mt-20" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-          © 2025
+          © 2026
         </p>
       </div>
     </div>
@@ -1071,7 +1109,7 @@ function NatPortfolio() {
 
 export default function Page() {
   return (
-    <main className="flex h-screen w-full overflow-hidden bg-white">
+    <main className="flex h-screen w-full overflow-hidden bg-white overflow-lock">
       <div className="w-[380px] shrink-0 h-full"><TikTokMobile /></div>
       <div className="flex-1 h-full"><NatPortfolio /></div>
     </main>

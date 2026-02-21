@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "WebSearch",
+      "WebFetch(domain:pixabay.com)",
+      "WebFetch(domain:www.pexels.com)",
+      "Bash(brew install:*)",
+      "Bash(yt-dlp:*)",
+      "Bash(ls:*)"
     ]
   }
 }
