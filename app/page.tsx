@@ -505,7 +505,7 @@ function TikTokMobile() {
   const formatNum = (n: number) => n >= 1000 ? (n/1000).toFixed(1) + "K" : n.toString();
 
   return (
-    <div className="w-full h-full min-h-screen bg-black flex items-center justify-center overflow-hidden">
+    <div className="w-full h-full min-h-screen bg-white flex items-center justify-center overflow-hidden">
       {/* iPhone Frame - Fixed width like original */}
       <div 
         className="relative w-[340px] h-[700px] bg-black rounded-[45px] p-2.5"
