@@ -509,7 +509,7 @@ function TikTokMobile() {
       {/* iPhone Frame - Fixed width like original */}
       <div 
         className="relative w-[340px] h-[700px] bg-black rounded-[45px] p-2.5"
-        style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 2px #333' }}
+        style={{ boxShadow: 'none' }}
       >
         {/* Phone Inner */}
         <div className="absolute inset-2.5 bg-black rounded-[38px] overflow-hidden">
