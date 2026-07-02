@@ -8,13 +8,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Cole Gottdank | Brain Rot Portfolio 🧠",
-  description: "Founder of Helicone. 800+ commits. AI Gateway infrastructure. YC W23. This portfolio is unhinged on purpose.",
-  keywords: ["founder", "helicone", "ai gateway", "startup", "typescript", "open source"],
+  title: "Cole Gottdank",
+  description: "GTM/growth engineering at Mintlify. Previously helped take Helicone from zero to $1M ARR. This site has a TikTok in it on purpose.",
   authors: [{ name: "Cole Gottdank" }],
   openGraph: {
-    title: "Cole Gottdank | Brain Rot Portfolio",
-    description: "Founder of Helicone. This portfolio is unhinged on purpose.",
+    title: "Cole Gottdank",
+    description: "GTM/growth engineering at Mintlify. This site has a TikTok in it on purpose.",
     type: "website",
   },
 };
