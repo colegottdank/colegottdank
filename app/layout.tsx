@@ -7,6 +7,10 @@ const inter = Inter({
   variable: "--font-geist-sans",
 });
 
+// Render every request fresh so deploys show up immediately
+// (the prerendered homepage was getting edge-cached with a 1-year TTL)
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Cole Gottdank",
   description: "GTM/growth engineering at Mintlify. Previously helped take Helicone from zero to $1M ARR. This site has a TikTok in it on purpose.",
