@@ -1112,7 +1112,7 @@ function NatPortfolio() {
 
         <p className="mb-3">Some things about me:</p>
         <ul className="list-disc pl-10 space-y-[7px] mb-9">
-          <li>Engineer turned GTM. I run growth at <A href="https://mintlify.com">Mintlify</A></li>
+          <li>Engineer turned GTM. I do GTM/growth engineering at <A href="https://mintlify.com">Mintlify</A></li>
           <li>Before that, helped take <A href="https://helicone.ai">Helicone</A> from zero to $1M ARR in a year</li>
           <li>Started coding at 14 building Minecraft plugins</li>
           <li>Build everything with <A href="https://github.com/anthropics/claude-code">Claude Code</A></li>

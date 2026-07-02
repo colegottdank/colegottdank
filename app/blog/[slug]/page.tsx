@@ -44,7 +44,7 @@ const blogPosts: Record<string, { title: string; date: string; content: React.Re
     content: (
       <>
         <p>
-          AI search is my day job. I run growth at a docs company where about two-thirds of traffic is already AI agents, not people. If Generative Engine Optimization worked, I&rsquo;d be its best customer, and honestly I&rsquo;d probably be selling it too.
+          AI search is my day job. I do growth engineering at a docs company where about two-thirds of traffic is already AI agents, not people. If Generative Engine Optimization worked, I&rsquo;d be its best customer, and honestly I&rsquo;d probably be selling it too.
         </p>
         <p>So take it from someone with every incentive to believe: most of what&rsquo;s sold as GEO is fake.</p>
         <p>
