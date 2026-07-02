@@ -539,7 +539,7 @@ function TikTokMobile() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white">
+    <div className="h-full flex items-center justify-center bg-white">
       {/* iPhone frame */}
       <div className="relative w-[356px] h-[772px] select-none">
         {/* Side buttons */}
@@ -1105,7 +1105,7 @@ function NatPortfolio() {
   return (
     <div className="w-full h-full bg-white overflow-y-auto">
       <div
-        className="max-w-[560px] mx-auto px-8 py-16 lg:py-24 text-black text-[16px] leading-[1.6]"
+        className="max-w-[560px] mx-auto lg:mx-0 px-8 py-16 lg:py-24 text-black text-[16px] leading-[1.6]"
         style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
       >
         <h1 className="text-[19px] font-bold mb-7">Cole Gottdank</h1>
@@ -1145,11 +1145,11 @@ function NatPortfolio() {
 
 export default function Page() {
   return (
-    <main className="flex h-screen w-full overflow-hidden bg-white overflow-lock">
-      <div className="hidden lg:flex w-[45%] max-w-[560px] shrink-0 h-full items-center justify-center">
+    <main className="flex h-screen w-full overflow-hidden bg-white overflow-lock justify-center">
+      <div className="hidden lg:flex shrink-0 h-full items-center lg:mr-16 xl:mr-24">
         <TikTokMobile />
       </div>
-      <div className="flex-1 h-full min-w-0">
+      <div className="h-full min-w-0 w-full lg:w-[600px] lg:shrink-0">
         <NatPortfolio />
       </div>
     </main>
