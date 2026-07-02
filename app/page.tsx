@@ -1,16 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { 
-  Home,
-  Search,
-  PlusSquare,
-  MessageSquare,
-  User,
-  Volume2,
-  VolumeX,
-  Bookmark
-} from "lucide-react";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { CommentsModal } from "./components/CommentsModal";
 import { ProfileModal } from "./components/ProfileModal";
@@ -21,12 +11,10 @@ import { SoundPage } from "./components/SoundPage";
 import { HashtagPage } from "./components/HashtagPage";
 import { PrivacySettingsModal } from "./components/PrivacySettingsModal";
 import { WatchHistoryModal } from "./components/WatchHistoryModal";
-import { ReportModal } from "./components/ReportModal";
 import { ToastContainer, toast } from "./components/Toast";
 import { LongPressMenu } from "./components/LongPressMenu";
-import { SkeletonLoader } from "./components/SkeletonLoader";
-import { 
-  sampleVideos, 
+import {
+  sampleVideos,
   followingVideos,
   initializeDefaultData,
   isVideoLiked,
@@ -38,55 +26,97 @@ import {
   addViewedVideo
 } from "@/lib/data";
 
-// Icons
-const HeartIcon = () => (
-  <svg className="w-[40px] h-[40px]" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-  </svg>
-);
+/* ---------- TikTok icons (filled, like the real app) ---------- */
 
-const FilledHeartIcon = () => (
-  <svg className="w-[40px] h-[40px]" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="2">
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-  </svg>
-);
+const iconShadow = "drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]";
 
-const FilledBookmarkIcon = () => (
-  <svg className="w-[40px] h-[40px]" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="2">
-    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+const HeartIcon = ({ liked }: { liked: boolean }) => (
+  <svg className={`w-[34px] h-[34px] ${iconShadow}`} viewBox="0 0 48 48" fill={liked ? "#fe2c55" : "#fff"}>
+    <path d="M34.6 5.6c-4.6 0-8.5 2.9-10.6 6-2.1-3.1-6-6-10.6-6C6.6 5.6 1.5 11 1.5 18c0 10.3 10.4 16.4 20.4 24.9 1.2 1 2.9 1 4.1 0C36.1 34.4 46.5 28.3 46.5 18c0-7-5.1-12.4-11.9-12.4z"/>
   </svg>
 );
 
 const CommentIcon = () => (
-  <svg className="w-[40px] h-[40px]" viewBox="0 0 24 24" fill="white">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+  <svg className={`w-[34px] h-[34px] ${iconShadow}`} viewBox="0 0 48 48" fill="#fff">
+    <path d="M24 4C12.4 4 3 12.3 3 22.5c0 5.6 2.8 10.6 7.3 14L8.7 43c-.3 1.1.8 2.1 1.9 1.6l8.4-3.6c1.6.3 3.3.5 5 .5 11.6 0 21-8.3 21-18.5S35.6 4 24 4z"/>
+    <circle cx="14.5" cy="22.5" r="2.6" fill="rgba(22,24,35,0.55)"/>
+    <circle cx="24" cy="22.5" r="2.6" fill="rgba(22,24,35,0.55)"/>
+    <circle cx="33.5" cy="22.5" r="2.6" fill="rgba(22,24,35,0.55)"/>
   </svg>
 );
 
-const ShareIcon = () => (
-  <svg className="w-[40px] h-[40px]" viewBox="0 0 24 24" fill="white">
-    <path d="M17.707 10.293l-5-5c-.391-.391-1.024-.391-1.414 0s-.391 1.024 0 1.414L14.586 10H7c-.552 0-1 .448-1 1s.448 1 1 1h7.586l-3.293 3.293c-.391.391-.391 1.024 0 1.414.195.195.451.293.707.293s.512-.098.707-.293l5-5c.391-.391.391-1.024 0-1.414z"/>
+const BookmarkIcon = ({ saved }: { saved: boolean }) => (
+  <svg className={`w-[32px] h-[32px] ${iconShadow}`} viewBox="0 0 48 48" fill={saved ? "#ffc107" : "#fff"}>
+    <path d="M12 4h24a3 3 0 0 1 3 3v36.1c0 1.2-1.4 2-2.4 1.2L24 35.6 11.4 44.3c-1 .7-2.4 0-2.4-1.2V7a3 3 0 0 1 3-3z"/>
   </svg>
 );
 
-const MusicIcon = () => (
-  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="white">
+const ShareArrowIcon = () => (
+  <svg className={`w-[34px] h-[34px] ${iconShadow}`} viewBox="0 0 48 48" fill="#fff">
+    <path d="M27.5 8.6c0-2 2.4-3 3.8-1.6l14.5 13.5c1 .9 1 2.5 0 3.4L31.3 37.4c-1.4 1.4-3.8.4-3.8-1.6v-6.4c-9 .1-15 2.6-19.9 8.4-.8.9-2.3.3-2.2-.9C6.6 25.4 13.9 17.6 27.5 15.5V8.6z"/>
+  </svg>
+);
+
+const MusicNoteIcon = () => (
+  <svg className="w-[13px] h-[13px] shrink-0" viewBox="0 0 24 24" fill="#fff">
     <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
   </svg>
 );
 
-// Helper to render caption with clickable hashtags
+/* Bottom nav icons */
+const NavHomeIcon = ({ active }: { active: boolean }) => (
+  <svg className="w-[26px] h-[26px]" viewBox="0 0 48 48" fill={active ? "#fff" : "none"} stroke={active ? "none" : "#7a7b82"} strokeWidth="3.4">
+    <path d="M23 5.1a1.6 1.6 0 0 1 2 0l17.8 14.7c1.2 1 .5 2.9-1 2.9H38v17.8a2.5 2.5 0 0 1-2.5 2.5H29a1.5 1.5 0 0 1-1.5-1.5V31.6h-7v9.9A1.5 1.5 0 0 1 19 43h-6.5A2.5 2.5 0 0 1 10 40.5V22.7H6.2c-1.5 0-2.2-1.9-1-2.9L23 5.1z"/>
+  </svg>
+);
+
+const NavDiscoverIcon = ({ active }: { active: boolean }) => (
+  <svg className="w-[25px] h-[25px]" viewBox="0 0 48 48" fill="none" stroke={active ? "#fff" : "#7a7b82"} strokeWidth="4" strokeLinecap="round">
+    <circle cx="21" cy="21" r="14"/>
+    <path d="M31.5 31.5 42 42"/>
+  </svg>
+);
+
+const NavInboxIcon = ({ active }: { active: boolean }) => (
+  <svg className="w-[26px] h-[26px]" viewBox="0 0 48 48" fill={active ? "#fff" : "none"} stroke={active ? "none" : "#7a7b82"} strokeWidth="3.4">
+    <path d="M9 6h30a4 4 0 0 1 4 4v21a4 4 0 0 1-4 4H27.2l-8.9 7.1c-1 .8-2.5.1-2.5-1.2V35H9a4 4 0 0 1-4-4V10a4 4 0 0 1 4-4z"/>
+  </svg>
+);
+
+const NavProfileIcon = ({ active }: { active: boolean }) => (
+  <svg className="w-[26px] h-[26px]" viewBox="0 0 48 48" fill={active ? "#fff" : "none"} stroke={active ? "none" : "#7a7b82"} strokeWidth="3.4">
+    <circle cx="24" cy="14" r="9"/>
+    <path d="M24 27c-9.4 0-17 6.4-17 14.3 0 .9.8 1.7 1.7 1.7h30.6c.9 0 1.7-.8 1.7-1.7C41 33.4 33.4 27 24 27z"/>
+  </svg>
+);
+
+const VerifiedBadge = () => (
+  <svg className="w-[14px] h-[14px] shrink-0" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="12" fill="#20d5ec"/>
+    <path d="M9.6 16.2 5.8 12.4l1.6-1.6 2.2 2.2 5.9-5.9 1.6 1.6z" fill="#fff"/>
+  </svg>
+);
+
+/* ---------- helpers ---------- */
+
+const formatNum = (n: number) => {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return n.toString();
+};
+
+// Caption with clickable hashtags
 const CaptionWithHashtags = ({ caption, onHashtagClick }: { caption: string; onHashtagClick: (tag: string) => void }) => {
   const parts = caption.split(/(#[\w]+)/g);
   return (
-    <span className="text-[14px] mb-[8px] opacity-90 leading-[1.3]">
+    <>
       {parts.map((part, i) => {
-        if (part.startsWith('#')) {
+        if (part.startsWith("#")) {
           return (
             <button
               key={i}
-              onClick={() => onHashtagClick(part)}
-              className="text-[#fe2c55] hover:underline font-medium"
+              onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
+              className="font-semibold hover:underline"
             >
               {part}
             </button>
@@ -94,7 +124,7 @@ const CaptionWithHashtags = ({ caption, onHashtagClick }: { caption: string; onH
         }
         return <span key={i}>{part}</span>;
       })}
-    </span>
+    </>
   );
 };
 
@@ -135,6 +165,7 @@ function TikTokMobile() {
   const [followingVideoList, setFollowingVideoList] = useState(followingVideos);
   const [currentHashtag, setCurrentHashtag] = useState<string | null>(null);
   const [showHashtagPage, setShowHashtagPage] = useState(false);
+  const [captionExpanded, setCaptionExpanded] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const refreshStartY = useRef<number | null>(null);
@@ -165,6 +196,11 @@ function TikTokMobile() {
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Collapse the caption when moving between videos
+  useEffect(() => {
+    setCaptionExpanded(false);
+  }, [currentIndex, activeTab]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -243,26 +279,26 @@ function TikTokMobile() {
     if (lastTapRef.current && currentTime - lastTapRef.current.time < 300) {
       // Double tap detected
       const distance = Math.sqrt(
-        Math.pow(x - lastTapRef.current.x, 2) + 
+        Math.pow(x - lastTapRef.current.x, 2) +
         Math.pow(y - lastTapRef.current.y, 2)
       );
-      
+
       if (distance < 50) {
         // Show floating heart
         const heartId = Date.now();
         setFloatingHearts(prev => [...prev, { id: heartId, x, y }]);
-        
+
         // Trigger like if not already liked
         if (!likedVideos.has(videoId)) {
           handleLike(videoId);
         }
-        
+
         // Remove heart after animation
         setTimeout(() => {
           setFloatingHearts(prev => prev.filter(h => h.id !== heartId));
         }, 800);
       }
-      
+
       lastTapRef.current = null;
     } else {
       lastTapRef.current = { time: currentTime, x, y };
@@ -271,13 +307,13 @@ function TikTokMobile() {
 
   // Long press handlers - support both mouse and touch
   const longPressStartPos = useRef<{x: number, y: number} | null>(null);
-  
+
   const handleLongPressStart = (video: typeof sampleVideos[0], e?: React.TouchEvent | React.MouseEvent) => {
     isLongPress.current = false;
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
     }
-    
+
     // Store start position for touch move detection
     if (e) {
       if ('touches' in e) {
@@ -286,7 +322,7 @@ function TikTokMobile() {
         longPressStartPos.current = { x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY };
       }
     }
-    
+
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       setLongPressVideo(video);
@@ -301,12 +337,12 @@ function TikTokMobile() {
     }
     longPressStartPos.current = null;
   };
-  
+
   const handleLongPressMove = (e: React.TouchEvent | React.MouseEvent) => {
     // Cancel long press if user moves finger/mouse more than 10px
     if (longPressStartPos.current && longPressTimer.current) {
       let currentX: number, currentY: number;
-      
+
       if ('touches' in e) {
         currentX = e.touches[0].clientX;
         currentY = e.touches[0].clientY;
@@ -314,18 +350,18 @@ function TikTokMobile() {
         currentX = (e as React.MouseEvent).clientX;
         currentY = (e as React.MouseEvent).clientY;
       }
-      
+
       const distance = Math.sqrt(
-        Math.pow(currentX - longPressStartPos.current.x, 2) + 
+        Math.pow(currentX - longPressStartPos.current.x, 2) +
         Math.pow(currentY - longPressStartPos.current.y, 2)
       );
-      
+
       if (distance > 10) {
         handleLongPressEnd();
       }
     }
   };
-  
+
   // Prevent context menu on mobile long press
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -339,11 +375,11 @@ function TikTokMobile() {
 
     const handleScroll = () => {
       if (isScrolling.current) return;
-      
+
       const scrollTop = container.scrollTop;
       const containerHeight = container.clientHeight;
       const newIndex = Math.round(scrollTop / containerHeight);
-      
+
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < videos.length) {
         setCurrentIndex(newIndex);
         // Mark video as viewed
@@ -351,7 +387,7 @@ function TikTokMobile() {
           addViewedVideo(videos[newIndex].id);
         }
       }
-      
+
       // Infinite scroll - load more when near bottom
       const scrollBottom = scrollTop + containerHeight;
       const totalHeight = container.scrollHeight;
@@ -388,7 +424,7 @@ function TikTokMobile() {
     if (refreshStartY.current !== null) {
       const currentY = e.touches[0].clientY;
       const diff = currentY - refreshStartY.current;
-      
+
       if (diff > 100 && !isRefreshing) {
         setIsRefreshing(true);
         // Simulate refresh
@@ -502,160 +538,113 @@ function TikTokMobile() {
     });
   };
 
-  const formatNum = (n: number) => n >= 1000 ? (n/1000).toFixed(1) + "K" : n.toString();
-
   return (
-    <div className="w-full h-full min-h-screen bg-white flex items-center justify-center overflow-hidden">
-      {/* iPhone Frame - Fixed width like original */}
-      <div 
-        className="relative w-[340px] h-[700px] bg-black rounded-[45px] p-2.5"
-        style={{ boxShadow: 'none' }}
-      >
-        {/* Phone Inner */}
-        <div className="absolute inset-2.5 bg-black rounded-[38px] overflow-hidden">
-          {/* Notch */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140px] h-[30px] bg-black rounded-b-2xl z-50" />
-          
-          {/* Status Bar */}
-          <div className="absolute top-[10px] left-[24px] right-[16px] flex justify-between items-center text-white text-[13px] z-40">
-            <span className="font-semibold tracking-wide">9:41</span>
-            <div className="flex items-center gap-[4px]">
-              <svg className="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3C7.46 3 3.34 4.78.29 7.67c-.18.18-.29.43-.29.71 0 .28.11.53.29.71l11 11c.39.39 1.02.39 1.41 0l11-11c.18-.18.29-.43.29-.71 0-.28-.11-.53-.29-.71C20.66 4.78 16.54 3 12 3z"/>
-              </svg>
-              <svg className="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 11c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 2c0-3.31-2.69-6-6-6s-6 2.69-6 6c0 2.22 1.21 4.15 3 5.19l1-1.74c-1.19-.7-2-1.97-2-3.45 0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.48-.81 2.75-2 3.45l1 1.74c1.79-1.04 3-2.97 3-5.19zM12 5C6.48 5 2 9.48 2 15c0 2.76 1.12 5.26 2.93 7.07l1.43-1.43C4.9 19.21 4.06 17.24 4.06 15c0-4.39 3.55-7.94 7.94-7.94S19.94 10.61 19.94 15c0 2.24-.84 4.21-2.3 5.64l1.43 1.43C20.88 20.26 22 17.76 22 15c0-5.52-4.48-10-10-10z"/>
-              </svg>
-              <div className="w-[24px] h-[11px] border border-white/80 rounded-[3px] relative ml-[2px]">
-                <div className="absolute inset-[1px] bg-white rounded-[1px] w-[70%]" />
-              </div>
-            </div>
-          </div>
+    <div className="w-full h-full flex items-center justify-center bg-white">
+      {/* iPhone frame */}
+      <div className="relative w-[356px] h-[772px] select-none">
+        {/* Side buttons */}
+        <div className="absolute -left-[2.5px] top-[136px] w-[3px] h-[24px] bg-[#2c2c2e] rounded-l" />
+        <div className="absolute -left-[2.5px] top-[180px] w-[3px] h-[44px] bg-[#2c2c2e] rounded-l" />
+        <div className="absolute -left-[2.5px] top-[234px] w-[3px] h-[44px] bg-[#2c2c2e] rounded-l" />
+        <div className="absolute -right-[2.5px] top-[196px] w-[3px] h-[68px] bg-[#2c2c2e] rounded-r" />
 
-          {/* Main Content */}
-          <div className="w-full h-full bg-black flex flex-col overflow-hidden pt-8">
-            {/* Video Feed */}
-            <div 
-              ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth"
-            >
-              {videos.map((video, index) => (
-                <div 
-                  key={`${video.id}-${index}`}
-                  className="h-full w-full snap-start relative"
-                  onClick={(e) => handleVideoTap(e, video.id)}
-                  onMouseDown={(e) => handleLongPressStart(video, e)}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
-                  onMouseMove={handleLongPressMove}
-                  onTouchStart={(e) => handleLongPressStart(video, e)}
-                  onTouchEnd={handleLongPressEnd}
-                  onTouchMove={handleLongPressMove}
-                  onContextMenu={handleContextMenu}
-                >
+        {/* Body / bezel */}
+        <div className="absolute inset-0 rounded-[54px] bg-[#0d0d0f] shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.14),inset_0_0_0_4px_rgba(0,0,0,0.9)]" />
+
+        {/* Screen */}
+        <div className="absolute inset-[11px] rounded-[44px] bg-black overflow-hidden">
+          <div className="w-full h-full flex flex-col">
+            {/* ---- Feed area (video is edge-to-edge; everything overlays it) ---- */}
+            <div className="relative flex-1 overflow-hidden">
+              <div
+                ref={scrollContainerRef}
+                className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {videos.map((video, index) => (
+                  <div
+                    key={`${video.id}-${index}`}
+                    className="h-full w-full snap-start relative"
+                    onClick={(e) => handleVideoTap(e, video.id)}
+                    onMouseDown={(e) => handleLongPressStart(video, e)}
+                    onMouseUp={handleLongPressEnd}
+                    onMouseLeave={handleLongPressEnd}
+                    onMouseMove={handleLongPressMove}
+                    onTouchStart={(e) => handleLongPressStart(video, e)}
+                    onTouchEnd={handleLongPressEnd}
+                    onTouchMove={handleLongPressMove}
+                    onContextMenu={handleContextMenu}
+                  >
                     <VideoPlayer
-                    src={video.url}
-                    videoId={video.id}
-                    isActive={index === currentIndex}
-                    isPaused={!!isPaused[video.id]}
-                    muted={muted}
-                    playbackRate={playbackRate}
-                    loop={false}
-                    onTogglePause={() => setIsPaused(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
-                    onToggleMute={() => setMuted(!muted)}
-                    onEnded={handleVideoEnded}
-                  />
-                  
-                  {/* Floating Hearts for Double-Tap Like */}
-                  {index === currentIndex && floatingHearts.map((heart) => (
-                    <div
-                      key={heart.id}
-                      className="absolute pointer-events-none animate-float-up"
-                      style={{
-                        left: heart.x - 25,
-                        top: heart.y - 25,
-                        animation: 'floatUp 0.8s ease-out forwards'
-                      }}
-                    >
-                      <svg width="50" height="50" viewBox="0 0 24 24" fill="#fe2c55">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
-                    </div>
-                  ))}
-                  
-                  {/* UI Overlay */}
-                  <>
-                    {/* Top Tabs */}
-                    <div className="absolute top-[38px] left-0 right-0 flex items-center justify-center gap-[16px] text-white z-30">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setActiveTab("following"); setCurrentIndex(0); scrollContainerRef.current?.scrollTo({ top: 0 }); }}
-                        className="relative active:scale-95 transition cursor-pointer"
-                      >
-                        <span className={`text-[15px] ${activeTab === "following" ? "font-bold" : "font-normal opacity-70"}`}>Following</span>
-                        {activeTab === "following" && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#fe2c55]" />}
-                      </button>
-                      <div className="w-[1px] h-[14px] bg-white/40" />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setActiveTab("foryou"); setCurrentIndex(0); scrollContainerRef.current?.scrollTo({ top: 0 }); }}
-                        className="relative active:scale-95 transition cursor-pointer"
-                      >
-                        <span className={`text-[15px] ${activeTab === "foryou" ? "font-bold" : "font-normal opacity-70"}`}>For You</span>
-                        {activeTab === "foryou" && <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#fe2c55]" />}
-                      </button>
-                    </div>
+                      src={video.url}
+                      videoId={video.id}
+                      isActive={index === currentIndex}
+                      isPaused={!!isPaused[video.id]}
+                      muted={muted}
+                      playbackRate={playbackRate}
+                      loop={false}
+                      onTogglePause={() => setIsPaused(prev => ({ ...prev, [video.id]: !prev[video.id] }))}
+                      onToggleMute={() => setMuted(!muted)}
+                      onEnded={handleVideoEnded}
+                    />
 
-                    {/* Right Actions */}
-                    <div className="absolute right-[10px] bottom-[90px] flex flex-col items-center gap-[8px]">
-                      {/* Profile */}
-                      <div className="relative mb-[2px]">
+                    {/* Legibility scrims */}
+                    <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-black/50 via-black/20 to-transparent pointer-events-none" />
+                    <div className="absolute bottom-0 inset-x-0 h-[130px] bg-gradient-to-t from-black/60 via-black/25 to-transparent pointer-events-none" />
+
+                    {/* Floating hearts for double-tap like */}
+                    {index === currentIndex && floatingHearts.map((heart) => (
+                      <div
+                        key={heart.id}
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: heart.x - 25,
+                          top: heart.y - 25,
+                          animation: 'floatUp 0.8s ease-out forwards'
+                        }}
+                      >
+                        <svg width="50" height="50" viewBox="0 0 48 48" fill="#fe2c55">
+                          <path d="M34.6 5.6c-4.6 0-8.5 2.9-10.6 6-2.1-3.1-6-6-10.6-6C6.6 5.6 1.5 11 1.5 18c0 10.3 10.4 16.4 20.4 24.9 1.2 1 2.9 1 4.1 0C36.1 34.4 46.5 28.3 46.5 18c0-7-5.1-12.4-11.9-12.4z"/>
+                        </svg>
+                      </div>
+                    ))}
+
+                    {/* Right action rail */}
+                    <div className="absolute right-[6px] bottom-[14px] flex flex-col items-center gap-[14px] z-20">
+                      {/* Avatar + follow */}
+                      <div className="relative mb-[6px]">
                         <button
-                          onClick={() => setShowProfile(video.username)}
-                          className="active:scale-95 transition"
+                          onClick={(e) => { e.stopPropagation(); setShowProfile(video.username); }}
+                          className="block active:scale-95 transition"
                         >
-                          <div className="w-[44px] h-[44px] rounded-full bg-gradient-to-br from-cyan-400 to-purple-600 p-[2px]">
-                            <img
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}&backgroundColor=b6e3f4`}
-                              alt="Profile"
-                              className="w-full h-full rounded-full bg-gray-800 border-2 border-white object-cover"
-                            />
-                          </div>
+                          <img
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}&backgroundColor=b6e3f4`}
+                            alt={`@${video.username}`}
+                            className="w-[46px] h-[46px] rounded-full border-[1.5px] border-white bg-gray-700 object-cover"
+                          />
                         </button>
-                        {/* Quick Follow Button */}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleQuickFollow(video.username);
-                          }}
-                          className={`absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-[16px] h-[16px] rounded-full flex items-center justify-center border-[1.5px] border-black active:scale-90 transition ${
-                            followingUsers.has(video.username) 
-                              ? "bg-white" 
-                              : "bg-[#fe2c55] hover:bg-[#ff3d6a]"
+                          onClick={(e) => { e.stopPropagation(); handleQuickFollow(video.username); }}
+                          className={`absolute -bottom-[8px] left-1/2 -translate-x-1/2 w-[19px] h-[19px] rounded-full flex items-center justify-center active:scale-90 transition ${
+                            followingUsers.has(video.username) ? "bg-white" : "bg-[#fe2c55]"
                           }`}
                         >
-                          <span className={`text-[9px] font-bold leading-none ${
-                            followingUsers.has(video.username) ? "text-black" : "text-white"
+                          <span className={`text-[12px] font-bold leading-none mt-[-1px] ${
+                            followingUsers.has(video.username) ? "text-[#fe2c55]" : "text-white"
                           }`}>
                             {followingUsers.has(video.username) ? "✓" : "+"}
                           </span>
                         </button>
                       </div>
 
-                      {/* Like */}
-                      <ActionBtn 
-                        icon={likedVideos.has(video.id) ? <FilledHeartIcon /> : <HeartIcon />}
+                      <RailBtn
+                        icon={<HeartIcon liked={likedVideos.has(video.id)} />}
                         label={formatNum(video.likes + (likedVideos.has(video.id) ? 1 : 0))}
                         onClick={() => handleLike(video.id)}
                       />
-
-                      {/* Save */}
-                      <ActionBtn 
-                        icon={savedVideos.has(video.id) ? <FilledBookmarkIcon /> : <Bookmark className="w-[40px] h-[40px] text-white" />}
-                        label={savedVideos.has(video.id) ? "Saved" : "Save"}
-                        onClick={() => handleSave(video.id)}
-                      />
-
-                      {/* Comment */}
-                      <ActionBtn 
+                      <RailBtn
                         icon={<CommentIcon />}
                         label={formatNum(video.comments)}
                         onClick={() => {
@@ -663,130 +652,212 @@ function TikTokMobile() {
                           setShowComments(true);
                         }}
                       />
-
-                      {/* Share */}
-                      <ActionBtn 
-                        icon={<ShareIcon />}
+                      <RailBtn
+                        icon={<BookmarkIcon saved={savedVideos.has(video.id)} />}
+                        label={formatNum(Math.round(video.likes / 9) + (savedVideos.has(video.id) ? 1 : 0))}
+                        onClick={() => handleSave(video.id)}
+                      />
+                      <RailBtn
+                        icon={<ShareArrowIcon />}
                         label={formatNum(video.shares)}
                         onClick={() => {
                           setShareVideoId(video.id);
                           setShowShare(true);
                         }}
                       />
-                    </div>
 
-                    {/* Bottom Info */}
-                    <div className="absolute bottom-[20px] left-[12px] right-[90px] text-white">
-                      <div className="flex items-center gap-[6px] mb-[6px]">
-                        <button 
-                          onClick={() => setShowProfile(video.username)}
-                          className="font-semibold text-[15px] hover:underline active:scale-95 transition"
-                        >
-                          @{video.username}
-                        </button>
-                        {video.verified && (
-                          <div className="w-[14px] h-[14px] bg-[#20d5ec] rounded-full flex items-center justify-center">
-                            <svg className="w-[9px] h-[9px] text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <CaptionWithHashtags caption={video.caption} onHashtagClick={(tag) => { setCurrentHashtag(tag); setShowHashtagPage(true); }} />
-                      <button 
-                        onClick={() => {
+                      {/* Spinning sound disc */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setCurrentSoundId(video.soundId);
                           setCurrentSoundName(video.soundName);
                           setShowSoundPage(true);
                         }}
-                        className="flex items-center gap-[6px] hover:opacity-100 transition"
+                        className="mt-[6px] active:scale-95 transition"
                       >
-                        <MusicIcon />
-                        <span className="text-[12px] opacity-80 truncate">{video.soundName}</span>
+                        <div
+                          className="w-[42px] h-[42px] rounded-full animate-spin"
+                          style={{
+                            animationDuration: '6s',
+                            background: 'conic-gradient(from 45deg, #1b1b1d, #3a3a3e, #1b1b1d, #3a3a3e, #1b1b1d)'
+                          }}
+                        >
+                          <div className="w-full h-full rounded-full flex items-center justify-center">
+                            <img
+                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}&backgroundColor=b6e3f4`}
+                              alt=""
+                              className="w-[20px] h-[20px] rounded-full object-cover"
+                            />
+                          </div>
+                        </div>
                       </button>
                     </div>
 
-                    {/* Spinning Record */}
-                    <button
-                      onClick={() => {
-                        setCurrentSoundId(video.soundId);
-                        setCurrentSoundName(video.soundName);
-                        setShowSoundPage(true);
-                      }}
-                      className="absolute bottom-[22px] right-[10px] active:scale-95 transition"
-                    >
-                      <div
-                        className="w-[40px] h-[40px] rounded-full bg-gray-900 border-[2px] border-white/20 overflow-hidden relative animate-spin"
-                        style={{ animationDuration: '5s' }}
+                    {/* Bottom-left info */}
+                    <div className="absolute bottom-[14px] left-[12px] right-[64px] z-10 text-white">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowProfile(video.username); }}
+                        className="flex items-center gap-[5px] mb-[5px] active:scale-95 transition"
                       >
-                        <img 
-                          src="https://images.unsplash.com/photo-1493225255756-d9584f8606e8?w=100&h=100&fit=crop" 
-                          alt="Album Cover"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement?.classList.add('bg-gradient-to-br', 'from-[#fe2c55]', 'to-purple-600');
-                          }}
+                        <span className="font-bold text-[16px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">@{video.username}</span>
+                        {video.verified && <VerifiedBadge />}
+                      </button>
+                      <div
+                        onClick={(e) => { e.stopPropagation(); setCaptionExpanded(v => !v); }}
+                        className={`text-[13.5px] leading-[1.35] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] cursor-pointer ${
+                          index === currentIndex && captionExpanded ? "" : "line-clamp-2"
+                        }`}
+                      >
+                        <CaptionWithHashtags
+                          caption={video.caption}
+                          onHashtagClick={(tag) => { setCurrentHashtag(tag); setShowHashtagPage(true); }}
                         />
-                        <div className="absolute inset-0 rounded-full border border-white/10" />
-                        <div className="absolute inset-[4px] rounded-full border border-white/10" />
-                        <div className="absolute inset-[8px] rounded-full border border-white/10" />
-                        <div className="absolute inset-[12px] rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                          <div className="w-[6px] h-[6px] rounded-full bg-black" />
-                        </div>
+                        {video.caption.length > 80 && (
+                          <span className="font-semibold text-white/75">
+                            {index === currentIndex && captionExpanded ? "  less" : "  more"}
+                          </span>
+                        )}
                       </div>
-                    </button>
-                  </>
-                </div>
-              ))}
-            </div>
+                      {/* Sound marquee */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentSoundId(video.soundId);
+                          setCurrentSoundName(video.soundName);
+                          setShowSoundPage(true);
+                        }}
+                        className="flex items-center gap-[6px] mt-[7px] max-w-[190px]"
+                      >
+                        <MusicNoteIcon />
+                        <div className="overflow-hidden whitespace-nowrap flex-1">
+                          <div className="inline-flex animate-marquee">
+                            <span className="text-[13px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] pr-8">{video.soundName}</span>
+                            <span className="text-[13px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] pr-8">{video.soundName}</span>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-            {/* Bottom Nav */}
-            <div className="h-[52px] bg-black flex items-end justify-around px-2 pb-[10px] z-40 relative">
-              <NavBtn 
-                icon={<Home className="w-[24px] h-[24px]" />} 
-                label="Home" 
-                active={activeNavTab === "home"}
-                onClick={() => {
-                  setActiveNavTab("home");
-                  scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                  setCurrentIndex(0);
-                }}
-              />
-              <NavBtn
-                icon={<Search className="w-[24px] h-[24px]" />}
-                label="Discover"
-                active={activeNavTab === "discover"}
-                onClick={() => {
-                  setActiveNavTab("discover");
-                  setShowDiscover(true);
-                }}
-              />
-              <div className="relative -top-[4px]" onClick={() => setShowCreate(true)}>
-                <div className="w-[44px] h-[30px] bg-gradient-to-r from-cyan-400 to-[#fe2c55] rounded-[8px] flex items-center justify-center shadow-lg cursor-pointer active:scale-95 transition">
-                  <PlusSquare className="w-[24px] h-[24px] text-white" strokeWidth={2.5} />
+              {/* Dynamic island */}
+              <div className="absolute top-[9px] left-1/2 -translate-x-1/2 w-[100px] h-[27px] bg-black rounded-full z-50" />
+
+              {/* Status bar */}
+              <div className="absolute top-[13px] left-[26px] right-[20px] flex justify-between items-center text-white z-40 pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                <span className="text-[14px] font-semibold tracking-wide">9:41</span>
+                <div className="flex items-center gap-[5px]">
+                  {/* Signal */}
+                  <svg className="w-[17px] h-[11px]" viewBox="0 0 17 11" fill="#fff">
+                    <rect x="0" y="7" width="3" height="4" rx="0.8"/>
+                    <rect x="4.5" y="5" width="3" height="6" rx="0.8"/>
+                    <rect x="9" y="2.5" width="3" height="8.5" rx="0.8"/>
+                    <rect x="13.5" y="0" width="3" height="11" rx="0.8"/>
+                  </svg>
+                  {/* Wifi */}
+                  <svg className="w-[15px] h-[11px]" viewBox="0 0 16 12" fill="#fff">
+                    <path d="M8 2.4c2.6 0 5 .95 6.85 2.53a.6.6 0 0 0 .84-.06l.9-1.03a.6.6 0 0 0-.05-.85A12.4 12.4 0 0 0 8 0C4.85 0 1.97 1.13.46 2.99a.6.6 0 0 0-.05.85l.9 1.03a.6.6 0 0 0 .84.06A10.6 10.6 0 0 1 8 2.4zm0 4.1c1.42 0 2.73.5 3.76 1.33a.6.6 0 0 0 .82-.07l.92-1.05a.6.6 0 0 0-.06-.86A8.3 8.3 0 0 0 8 4.1c-2.05 0-3.93.68-5.44 1.75a.6.6 0 0 0-.06.86l.92 1.05a.6.6 0 0 0 .82.07A6.3 6.3 0 0 1 8 6.5zm2.3 3.35a.6.6 0 0 0-.05-.9A4.2 4.2 0 0 0 8 8.2c-.85 0-1.63.25-2.25.75a.6.6 0 0 0-.05.9l1.87 2a.6.6 0 0 0 .86 0l1.87-2z"/>
+                  </svg>
+                  {/* Battery */}
+                  <div className="flex items-center">
+                    <div className="w-[22px] h-[11px] rounded-[3px] border border-white/60 p-[1.5px]">
+                      <div className="h-full w-[75%] bg-white rounded-[1.5px]" />
+                    </div>
+                    <div className="w-[1.5px] h-[4px] bg-white/60 rounded-r ml-[1px]" />
+                  </div>
                 </div>
               </div>
-              <NavBtn
-                icon={<MessageSquare className="w-[24px] h-[24px]" />}
-                label="Inbox"
-                active={activeNavTab === "inbox"}
-                onClick={() => {
-                  setActiveNavTab("inbox");
-                  setShowInbox(true);
-                }}
-              />
-              <NavBtn 
-                icon={<User className="w-[24px] h-[24px]" />} 
-                label="Me"
-                active={activeNavTab === "me"}
-                onClick={() => setShowProfile("currentuser")}
-              />
+
+              {/* Following / For You tabs */}
+              <div className="absolute top-[46px] inset-x-0 flex items-center justify-center gap-[20px] z-30">
+                {(["following", "foryou"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab(tab);
+                      setCurrentIndex(0);
+                      scrollContainerRef.current?.scrollTo({ top: 0 });
+                    }}
+                    className="relative pb-[7px] active:scale-95 transition cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                  >
+                    <span className={`text-[16px] text-white ${activeTab === tab ? "font-bold" : "font-medium opacity-60"}`}>
+                      {tab === "following" ? "Following" : "For You"}
+                    </span>
+                    {activeTab === tab && (
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[30px] h-[3px] bg-white rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Pull-to-refresh spinner */}
+              {isRefreshing && (
+                <div className="absolute top-[80px] inset-x-0 flex justify-center z-40">
+                  <div className="w-7 h-7 border-[3px] border-white/25 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
             </div>
 
-            {/* Home Indicator */}
-            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/30 rounded-full z-50" />
+            {/* ---- Bottom nav ---- */}
+            <div className="h-[64px] bg-black border-t border-white/10 relative shrink-0">
+              <div className="flex items-start justify-around pt-[7px] px-1">
+                <NavBtn
+                  icon={<NavHomeIcon active={activeNavTab === "home"} />}
+                  label="Home"
+                  active={activeNavTab === "home"}
+                  onClick={() => {
+                    setActiveNavTab("home");
+                    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                    setCurrentIndex(0);
+                  }}
+                />
+                <NavBtn
+                  icon={<NavDiscoverIcon active={activeNavTab === "discover"} />}
+                  label="Discover"
+                  active={activeNavTab === "discover"}
+                  onClick={() => {
+                    setActiveNavTab("discover");
+                    setShowDiscover(true);
+                  }}
+                />
+                {/* Create button */}
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="relative w-[46px] h-[30px] mt-[1px] active:scale-95 transition"
+                >
+                  <div className="absolute inset-y-0 left-0 right-[6px] rounded-[8px] bg-[#25f4ee]" />
+                  <div className="absolute inset-y-0 left-[6px] right-0 rounded-[8px] bg-[#fe2c55]" />
+                  <div className="absolute inset-y-0 left-[3px] right-[3px] rounded-[8px] bg-white flex items-center justify-center">
+                    <svg className="w-[16px] h-[16px]" viewBox="0 0 24 24" fill="#000">
+                      <path d="M13.5 3h-3v7.5H3v3h7.5V21h3v-7.5H21v-3h-7.5z"/>
+                    </svg>
+                  </div>
+                </button>
+                <NavBtn
+                  icon={<NavInboxIcon active={activeNavTab === "inbox"} />}
+                  label="Inbox"
+                  active={activeNavTab === "inbox"}
+                  onClick={() => {
+                    setActiveNavTab("inbox");
+                    setShowInbox(true);
+                  }}
+                />
+                <NavBtn
+                  icon={<NavProfileIcon active={activeNavTab === "me"} />}
+                  label="Me"
+                  active={activeNavTab === "me"}
+                  onClick={() => {
+                    setActiveNavTab("me");
+                    setShowProfile("currentuser");
+                  }}
+                />
+              </div>
+              {/* Home indicator */}
+              <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2 w-[110px] h-[4px] bg-white/70 rounded-full" />
+            </div>
           </div>
 
           {/* Comments Modal */}
@@ -813,11 +884,11 @@ function TikTokMobile() {
               <div className="w-full bg-[#1a1a1a] rounded-t-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-white font-semibold text-lg">Share to</span>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowShare(false);
                       setShareVideoId(null);
-                    }} 
+                    }}
                     className="text-white/60 hover:text-white"
                   >
                     <span className="text-2xl">&times;</span>
@@ -874,7 +945,10 @@ function TikTokMobile() {
           {/* Discover Modal */}
           <DiscoverModal
             isOpen={showDiscover}
-            onClose={() => setShowDiscover(false)}
+            onClose={() => {
+              setShowDiscover(false);
+              setActiveNavTab("home");
+            }}
             onHashtagClick={(tag) => {
               setCurrentHashtag(tag);
               setShowHashtagPage(true);
@@ -884,7 +958,10 @@ function TikTokMobile() {
           {/* Inbox Modal */}
           <InboxModal
             isOpen={showInbox}
-            onClose={() => setShowInbox(false)}
+            onClose={() => {
+              setShowInbox(false);
+              setActiveNavTab("home");
+            }}
           />
 
           {/* Create Modal */}
@@ -957,10 +1034,10 @@ function TikTokMobile() {
           />
         </div>
       </div>
-      
+
       {/* Toast Container - Global */}
       <ToastContainer />
-      
+
       {/* Floating Heart Animation Styles */}
       <style jsx global>{`
         @keyframes floatUp {
@@ -977,52 +1054,48 @@ function TikTokMobile() {
             opacity: 0;
           }
         }
-        
-        .animate-float-up {
-          animation: floatUp 0.8s ease-out forwards;
-        }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        
-        .animate-shimmer {
-          animation: shimmer 1.5s infinite;
-        }
       `}</style>
     </div>
   );
 }
 
-function ActionBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
+function RailBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-[2px] text-white active:scale-90 transition drop-shadow-md">
-      <div className="w-[48px] h-[48px] flex items-center justify-center">
-        {icon}
-      </div>
-      <span className="text-[11px] font-medium leading-none">{label}</span>
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className="flex flex-col items-center gap-[3px] text-white active:scale-90 transition"
+    >
+      {icon}
+      <span className="text-[12px] font-semibold leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{label}</span>
     </button>
   );
 }
 
 function NavBtn({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={`flex flex-col items-center min-w-[60px] ${active ? "text-white" : "text-gray-400"} active:scale-95 transition`}
+      className="flex flex-col items-center gap-[3px] min-w-[54px] active:scale-95 transition"
     >
       {icon}
-      <span className="text-[10px] mt-[2px] leading-none">{label}</span>
+      <span className={`text-[10px] leading-none ${active ? "text-white font-semibold" : "text-[#7a7b82]"}`}>{label}</span>
     </button>
   );
 }
 
-// Portfolio Component
+/* ---------- Nat-Friedman-style personal site ---------- */
+
+const A = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a
+    href={href}
+    className="text-[#0000EE] underline visited:text-[#551A8B]"
+    target={href.startsWith("/") ? undefined : "_blank"}
+    rel={href.startsWith("/") ? undefined : "noopener noreferrer"}
+  >
+    {children}
+  </a>
+);
+
 function NatPortfolio() {
   const blogPosts = [
     { title: "CLI beats MCP. Here's why.", date: "Feb 2026", slug: "cli-vs-mcp" },
@@ -1031,77 +1104,39 @@ function NatPortfolio() {
 
   return (
     <div className="w-full h-full bg-white overflow-y-auto">
-      <div className="max-w-[600px] mx-auto py-20 px-8 md:px-12">
-        {/* Name */}
-        <h1 className="text-[32px] md:text-[40px] font-normal text-black mb-6 tracking-[-0.02em]" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
-          Cole Gottdank
-        </h1>
+      <div
+        className="max-w-[560px] mx-auto px-8 py-16 lg:py-24 text-black text-[16px] leading-[1.6]"
+        style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
+      >
+        <h1 className="text-[19px] font-bold mb-7">Cole Gottdank</h1>
 
-        {/* Bio */}
-        <div className="text-[17px] leading-[1.7] text-black/90" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
-          <p className="mb-6">
-            Engineer turned GTM at{" "}
-            <a href="https://helicone.ai" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
-              Helicone
-            </a>
-            , where we handle billions of LLM requests. Started coding at 14 building Minecraft plugins.
-          </p>
+        <p className="mb-3">Some things about me:</p>
+        <ul className="list-disc pl-10 space-y-[7px] mb-9">
+          <li>Engineer turned GTM at <A href="https://helicone.ai">Helicone</A>, where we handle billions of LLM requests</li>
+          <li>Started coding at 14 building Minecraft plugins</li>
+          <li>Build everything with <A href="https://github.com/anthropics/claude-code">Claude Code</A> now</li>
+          <li>Made <A href="https://debateai.org">DebateAI</A> and <A href="https://dailyspud.colegottdank.com">Daily Spud</A></li>
+          <li>Learning to cook the <A href="https://www.kenjilopezalt.com">Kenji</A> way</li>
+          <li>Into AI agents, 3D printing, and getting better at basketball</li>
+          <li>Washed up Rocket League grand champ</li>
+        </ul>
 
-          <p className="mb-6">
-            Currently building with{" "}
-            <a href="https://github.com/anthropics/claude-code" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
-              Claude Code
-            </a>
-            . Side projects:{" "}
-            <a href="https://debateai.org" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
-              DebateAI
-            </a>
-            ,{" "}
-            <a href="https://dailyspud.colegottdank.com" className="underline underline-offset-2 decoration-black/30 hover:decoration-black transition-colors">
-              Daily Spud
-            </a>
-            . Interested in AI agents, learning to cook the Kenji way, 3D printing, and getting better at basketball. Washed up Rocket League grand champ.
-          </p>
-        </div>
+        <p className="mb-3">Some things I&rsquo;ve written:</p>
+        <ul className="list-disc pl-10 space-y-[7px] mb-9">
+          {blogPosts.map((post) => (
+            <li key={post.slug}>
+              <A href={`/blog/${post.slug}`}>{post.title}</A>{" "}
+              <span className="text-black/50">({post.date})</span>
+            </li>
+          ))}
+        </ul>
 
-        {/* Links */}
-        <div className="flex gap-6 mt-8 text-[14px]" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-          <a href="https://github.com/colegottdank" className="text-black/60 hover:text-black transition-colors">
-            GitHub
-          </a>
-          <a href="https://x.com/coleywoleyyy" className="text-black/60 hover:text-black transition-colors">
-            Twitter
-          </a>
-          <a href="https://linkedin.com/in/colegottdank" className="text-black/60 hover:text-black transition-colors">
-            LinkedIn
-          </a>
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-black/10 mt-16 pt-12">
-          {/* Writing Section */}
-          <h2 className="text-[14px] text-black/40 uppercase tracking-[0.1em] mb-6" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-            Writing
-          </h2>
-          <ul className="space-y-4" style={{ fontFamily: "Times New Roman, Times, Georgia, serif" }}>
-            {blogPosts.map((post) => (
-              <li key={post.slug}>
-                <a
-                  href={`/blog/${post.slug}`}
-                  className="group flex items-baseline justify-between text-[17px] text-black/90 hover:text-black transition-colors"
-                >
-                  <span className="group-hover:underline underline-offset-2">{post.title}</span>
-                  <span className="text-[14px] text-black/40 ml-4">{post.date}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Footer */}
-        <p className="text-[13px] text-black/40 mt-20" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-          © 2026
-        </p>
+        <p className="mb-3">Where to find me:</p>
+        <ul className="list-disc pl-10 space-y-[7px]">
+          <li><A href="https://github.com/colegottdank">GitHub</A></li>
+          <li><A href="https://x.com/coleywoleyyy">Twitter</A></li>
+          <li><A href="https://linkedin.com/in/colegottdank">LinkedIn</A></li>
+        </ul>
       </div>
     </div>
   );
@@ -1110,8 +1145,12 @@ function NatPortfolio() {
 export default function Page() {
   return (
     <main className="flex h-screen w-full overflow-hidden bg-white overflow-lock">
-      <div className="w-[380px] shrink-0 h-full"><TikTokMobile /></div>
-      <div className="flex-1 h-full"><NatPortfolio /></div>
+      <div className="hidden lg:flex w-[45%] max-w-[560px] shrink-0 h-full items-center justify-center">
+        <TikTokMobile />
+      </div>
+      <div className="flex-1 h-full min-w-0">
+        <NatPortfolio />
+      </div>
     </main>
   );
 }
