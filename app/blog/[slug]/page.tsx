@@ -5,70 +5,36 @@ import Link from "next/link";
 
 const blogPosts: Record<string, { title: string; date: string; content: React.ReactNode }> = {
   "cli-vs-mcp": {
-    title: "CLI beats MCP. Here's why.",
+    title: "CLI beats MCP.",
     date: "Feb 2026",
     content: (
       <>
         <p>
-          MCP (Model Context Protocol) is the new hot thing. Anthropic built it to help AI connect to tools. It's supposed to make integrations easier.
+          I built two MCP servers. One connects Google Search Console to my coding agent, and when it worked the first time I felt like I&rsquo;d wired my house for the future.
         </p>
-        <p>It doesn't.</p>
-
-        <h2>The problem with MCP</h2>
+        <p>I barely use them anymore.</p>
         <p>
-          MCP adds a layer you don't need. It's a protocol. Protocols mean standards, compatibility checks, and documentation. Things break. Versions mismatch. Servers crash.
+          What I use instead is CLIs. My agent runs <code>gh</code> for GitHub, <code>wrangler</code> for Cloudflare, <code>ffmpeg</code> when I need video work, a small CLI I keep around for Google Workspace. Nobody wrote an &ldquo;integration&rdquo; for any of this. The agent runs <code>--help</code>, reads the output, and gets to work.
         </p>
-        <p>CLI tools don't have this problem. They've been around for 50 years. They work.</p>
-
-        <h2>What actually happens</h2>
+        <p>It took me two MCP servers to figure that out.</p>
         <p>
-          With MCP: You install a server. Configure JSON files. Hope the version matches. Debug connection errors. Read spec docs. Repeat.
-        </p>
-        <p>With CLI: You type a command. It runs.</p>
-
-        <h2>The real measure of a tool</h2>
-        <p>AI agents need to do two things:</p>
-        <ol>
-          <li>Send input</li>
-          <li>Get output</li>
-        </ol>
-        <p>
-          CLI does this perfectly. stdin and stdout. That's it. Universal. Works everywhere. No dependencies.
+          MCP starts from the premise that an agent is a fragile API client. So you stand up a server, define tool schemas, handle an auth handshake, and keep the thing running. When it breaks, you debug a protocol. My Search Console server needs re-authing every few weeks, and the fix is me, in a terminal, running a command. The plumbing for the AI needs a human plumber.
         </p>
         <p>
-          MCP makes this complicated. You need an MCP server running. The agent needs an MCP client. They negotiate capabilities. Then they communicate over a custom protocol.
-        </p>
-        <p>Why?</p>
-
-        <h2>What people actually want</h2>
-        <p>
-          Tool makers want AI to use their products. They think MCP is the answer because it's "designed for AI."
+          A CLI assumes whoever&rsquo;s calling it knows what they&rsquo;re doing. Fifty years of Unix conventions do the rest. Flags are documented in the tool itself. Errors come back as text with an exit code. Output pipes into the next command. And an agent can compose all of it on the fly: run a command, grep the result, retry with a different flag. You don&rsquo;t ship an integration; you ship a tool, and the agent writes a new integration every time it runs.
         </p>
         <p>
-          Wrong. AI doesn't need special protocols. AI needs text streams. CLI gives you text streams.
+          And agents grew up on terminals. Decades of shell sessions, man pages, and Stack Overflow answers are in the training data. There is no comparable corpus of people using your custom MCP server.
         </p>
-
-        <h2>The performance gap</h2>
-        <p>MCP adds latency. Every request goes through:</p>
-        <ul>
-          <li>Client encoding</li>
-          <li>Server decoding</li>
-          <li>Processing</li>
-          <li>Server encoding</li>
-          <li>Client decoding</li>
-        </ul>
-        <p>CLI is direct. One process. No network overhead. No serialization.</p>
-
-        <h2>When MCP makes sense</h2>
-        <p>Almost never. Maybe if you're building a closed system with one vendor. Maybe.</p>
-        <p>But even then, CLI works. You can wrap anything in a CLI. You can't wrap everything in MCP.</p>
-
-        <h2>What to do instead</h2>
-        <p>Build CLI tools. Make them simple. Make them output JSON if you need structure.</p>
         <p>
-          AI agents can call CLI tools today. No special libraries. No protocol implementations. Just exec() and pipes.
+          MCP has real uses. If your product is a SaaS with OAuth and no local anything, a hosted MCP server is a fine front door. Sandboxed environments with no shell need something like it. And schemas make sense when the model calling you is small and needs guardrails.
         </p>
-        <p>MCP is a solution looking for a problem. CLI already solved it.</p>
+        <p>
+          But if you&rsquo;re a tool vendor deciding what to build for the AI wave, the order is not close. Ship a CLI. Give it a <code>--json</code> flag. Write the help text like you mean it. Agents can use it today, from any harness, with zero client code.
+        </p>
+        <p>
+          I keep my two MCP servers running, mostly as a monument. The agent walks past them to get to the terminal.
+        </p>
       </>
     ),
   },
@@ -78,61 +44,28 @@ const blogPosts: Record<string, { title: string; date: string; content: React.Re
     content: (
       <>
         <p>
-          GEO stands for Generative Engine Optimization. The pitch: optimize your content so AI search engines (ChatGPT, Perplexity, Claude) cite you more.
+          AI search is my day job. I run growth at a docs company where about two-thirds of traffic is already AI agents, not people. If Generative Engine Optimization worked, I&rsquo;d be its best customer, and honestly I&rsquo;d probably be selling it too.
         </p>
-        <p>It sounds smart. It's not.</p>
-
-        <h2>What GEO claims</h2>
+        <p>So take it from someone with every incentive to believe: most of what&rsquo;s sold as GEO is fake.</p>
         <p>
-          GEO consultants say you need special formatting. Structured data. "AI-friendly" writing. Semantic markup. Specific keywords.
-        </p>
-        <p>They charge money for this.</p>
-
-        <h2>What actually happens</h2>
-        <p>
-          AI models read text. That's it. They don't care about your markup. They don't check your schema.org tags. They process tokens.
-        </p>
-        <p>If your content answers a question well, AI cites you. If it doesn't, no amount of "GEO" helps.</p>
-
-        <h2>The evidence</h2>
-        <p>Look at what AI actually cites:</p>
-        <ul>
-          <li>Wikipedia (no special GEO)</li>
-          <li>Reddit (terrible markup)</li>
-          <li>Random blogs (basic HTML)</li>
-          <li>Academic papers (PDFs)</li>
-        </ul>
-        <p>AI doesn't prefer "optimized" content. AI prefers <em>good</em> content.</p>
-
-        <h2>Why GEO is attractive</h2>
-        <p>
-          It's new. SEO is crowded. GEO feels like early-2000s SEO — a fresh arbitrage opportunity.
+          The pitch goes like this. AI search engines are the new Google, so you need a new SEO. Special formatting. Entity optimization. &ldquo;AI-friendly&rdquo; content structure. Semantic markup that whispers to the models. There&rsquo;s a retainer attached.
         </p>
         <p>
-          But there's no arbitrage. There's no secret signal. AI models don't rank content like Google. They generate answers based on training data and context.
+          The problem is mechanical. Google was gameable because it was a ranking algorithm: crawl, index, score, rank. Every input to that scoring function was a surface you could push on, and an industry grew up pushing. LLMs don&rsquo;t work like that. There&rsquo;s no index to climb and no ranking function to reverse-engineer. A model either learned about you in training, or an agent retrieves your page at answer time and quotes whatever actually answers the question. You can&rsquo;t backlink your way into the weights.
         </p>
-        <p>You can't optimize for something that doesn't use ranking signals.</p>
-
-        <h2>What the AI companies say</h2>
         <p>
-          OpenAI, Anthropic, Google — none of them publish "GEO guidelines." They don't tell you how to get cited more. Because there isn't a formula.
+          And the traffic GEO promises to win mostly doesn&rsquo;t exist.{" "}
+          <a href="https://blog.cloudflare.com/ai-search-crawl-refer-ratio-on-radar/">Cloudflare&rsquo;s numbers</a> on this are brutal: for every visitor Anthropic&rsquo;s crawler refers back to a site, it crawls around 11,000 pages. Google&rsquo;s ratio is about 5 to 1. Agents read everything and send you almost no one. So even if GEO worked exactly as pitched, you&rsquo;d be winning a bigger cut of almost nothing.
         </p>
-        <p>If GEO worked, they'd warn users about it. Like Google warns about SEO manipulation. They don't.</p>
-
-        <h2>The real way to get cited</h2>
-        <p>Write clear answers to specific questions. Cover topics thoroughly. Be original. Be accurate.</p>
-        <p>That's it. No tricks.</p>
-
-        <h2>The danger of GEO</h2>
         <p>
-          GEO encourages bad writing. Short paragraphs. Keyword stuffing. "AI-optimized" structure that humans hate.
+          I want GEO to be real. A new gameable channel is exactly what a growth person prays for. I&rsquo;ve looked for the arbitrage, and what I found is plumbing. Serve your pages as clean markdown, because that&rsquo;s what agents actually request, at a fraction of the tokens. Publish an llms.txt. Don&rsquo;t block the crawlers in robots.txt. That&rsquo;s the whole technical playbook, and it&rsquo;s an afternoon of work, not a retainer.
         </p>
-        <p>This hurts you twice. Humans bounce. AI sees low engagement and stops citing.</p>
-
-        <h2>What to do instead</h2>
-        <p>Ignore GEO. Write for humans. Explain things clearly. Build authority on topics.</p>
-        <p>AI will cite you because your content is useful. Not because you followed some checklist.</p>
-        <p>GEO is marketing hype. Don't fall for it.</p>
+        <p>
+          Everything past the plumbing is the oldest advice in the world wearing a new lanyard: be the best answer to a specific question. Models quote the page that actually resolves the query. Wikipedia gets cited constantly and has never done a day of GEO in its life.
+        </p>
+        <p>
+          So the next time someone pitches you generative engine optimization, make them name the mechanism. If the answer involves the model preferring their markup, keep your money. The engine they&rsquo;re optimizing doesn&rsquo;t have the dials they&rsquo;re selling.
+        </p>
       </>
     ),
   },
@@ -218,6 +151,17 @@ export default function BlogPost() {
             }
             article em {
               font-style: italic;
+            }
+            article code {
+              font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+              font-size: 14px;
+              background: rgba(0, 0, 0, 0.05);
+              padding: 1px 5px;
+              border-radius: 4px;
+            }
+            article a {
+              text-decoration: underline;
+              text-underline-offset: 2px;
             }
           `}</style>
           {post.content}

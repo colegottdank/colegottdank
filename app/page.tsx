@@ -1098,7 +1098,7 @@ const A = ({ href, children }: { href: string; children: React.ReactNode }) => (
 
 function NatPortfolio() {
   const blogPosts = [
-    { title: "CLI beats MCP. Here's why.", date: "Feb 2026", slug: "cli-vs-mcp" },
+    { title: "CLI beats MCP.", date: "Feb 2026", slug: "cli-vs-mcp" },
     { title: "GEO is SEO for AI search. It's also fake.", date: "Feb 2026", slug: "geo-is-fake" },
   ];
 
@@ -1112,9 +1112,10 @@ function NatPortfolio() {
 
         <p className="mb-3">Some things about me:</p>
         <ul className="list-disc pl-10 space-y-[7px] mb-9">
-          <li>Engineer turned GTM at <A href="https://helicone.ai">Helicone</A>, where we handle billions of LLM requests</li>
+          <li>Engineer turned GTM. I run growth at <A href="https://mintlify.com">Mintlify</A></li>
+          <li>Before that, helped take <A href="https://helicone.ai">Helicone</A> from zero to $1M ARR in a year</li>
           <li>Started coding at 14 building Minecraft plugins</li>
-          <li>Build everything with <A href="https://github.com/anthropics/claude-code">Claude Code</A> now</li>
+          <li>Build everything with <A href="https://github.com/anthropics/claude-code">Claude Code</A></li>
           <li>Made <A href="https://debateai.org">DebateAI</A> and <A href="https://dailyspud.colegottdank.com">Daily Spud</A></li>
           <li>Learning to cook the <A href="https://www.kenjilopezalt.com">Kenji</A> way</li>
           <li>Into AI agents, 3D printing, and getting better at basketball</li>
