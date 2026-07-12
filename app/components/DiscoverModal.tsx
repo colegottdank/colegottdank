@@ -116,7 +116,7 @@ export function DiscoverModal({ isOpen, onClose, onHashtagClick, onSoundClick, o
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="absolute inset-0 bg-black z-50 flex flex-col animate-tab-overlay">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#0f0f0f]">
         <div className="flex-1 flex items-center gap-3 bg-white/10 rounded-full px-4 py-2.5">

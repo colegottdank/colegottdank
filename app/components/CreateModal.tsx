@@ -53,6 +53,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [modReason, setModReason] = useState<string | null>(null);
   const [phase, setPhase] = useState<"compose" | "review">("compose");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +67,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     setUploading(false);
     setProgress(0);
     setError(null);
+    setModReason(null);
     setPhase("compose");
   };
 
@@ -75,6 +77,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     const f = e.target.files?.[0];
     if (!f) return;
     setError(null);
+    setModReason(null);
     if (!ALLOWED.includes(f.type)) {
       setError("Only MP4 or WebM videos are supported.");
       return;
@@ -92,6 +95,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     setUploading(true);
     setProgress(0);
     setError(null);
+    setModReason(null);
     try {
       const thumb = await extractThumb(file);
       const hashtags = (caption.match(/#[\w]+/g) || []).join(" ");
@@ -107,7 +111,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
       onPosted?.();
     } catch (e) {
       if (e instanceof ApiError) {
-        if (e.status === 422) setError(`Blocked: ${e.reason || "failed moderation"}`);
+        if (e.status === 422) setModReason(e.reason || "failed moderation");
         else if (e.status === 429) setError("Upload limit reached. Try again later.");
         else if (e.status === 401) setError("Log in to upload.");
         else setError(e.message);
@@ -158,7 +162,14 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {error && <p className="text-[#fe2c55] text-sm mb-3 px-1">{error}</p>}
+        {modReason ? (
+          <div className="mb-3 px-1">
+            <p className="text-[#fe2c55] text-sm font-semibold">🦙 the llama says no</p>
+            <p className="text-white/50 text-xs mt-0.5">{modReason}</p>
+          </div>
+        ) : error ? (
+          <p className="text-[#fe2c55] text-sm mb-3 px-1">{error}</p>
+        ) : null}
 
         {!file ? (
           <div className="space-y-4">
@@ -236,7 +247,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
             </div>
 
             <button
-              onClick={() => { if (preview) URL.revokeObjectURL(preview); setFile(null); setPreview(null); setError(null); }}
+              onClick={() => { if (preview) URL.revokeObjectURL(preview); setFile(null); setPreview(null); setError(null); setModReason(null); }}
               disabled={uploading}
               className="w-full py-3 text-[#fe2c55] text-sm font-medium disabled:opacity-40"
             >

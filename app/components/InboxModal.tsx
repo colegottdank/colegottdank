@@ -59,7 +59,7 @@ export function InboxModal({ isOpen, onClose, onAllRead }: InboxModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="absolute inset-0 bg-black z-50 flex flex-col animate-tab-overlay">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0f0f0f]">
         <button onClick={onClose} className="text-white/60 hover:text-white"><X className="w-6 h-6" /></button>

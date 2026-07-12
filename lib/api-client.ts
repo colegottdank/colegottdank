@@ -255,8 +255,8 @@ export const discover = {
 
 /* ---------- Helpers ---------- */
 
-/** Canonical share URL for a video. */
-export const shareUrl = (id: number) => `https://colegottdank.com/?v=${id}`;
+/** Canonical share URL for a video. Unfurls with the video's thumbnail. */
+export const shareUrl = (id: number) => `https://colegottdank.com/v/${id}`;
 
 export const api = { auth, feed, videos, comments, users, notifications, reports, discover };
 export default api;

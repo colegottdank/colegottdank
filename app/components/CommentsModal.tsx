@@ -39,6 +39,7 @@ export function CommentsModal({ videoId, isOpen, onClose, commentCount, videoOwn
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [openReplies, setOpenReplies] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [modReason, setModReason] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +47,7 @@ export function CommentsModal({ videoId, isOpen, onClose, commentCount, videoOwn
     if (!isOpen || !videoId) return;
     setLoading(true);
     setError(null);
+    setModReason(null);
     commentsApi
       .list(videoId)
       .then((r) => setComments(r.comments))
@@ -61,6 +63,7 @@ export function CommentsModal({ videoId, isOpen, onClose, commentCount, videoOwn
     if (!text) return;
     setPosting(true);
     setError(null);
+    setModReason(null);
     try {
       const { comment } = await commentsApi.post(videoId, {
         text,
@@ -83,7 +86,7 @@ export function CommentsModal({ videoId, isOpen, onClose, commentCount, videoOwn
       setReplyingTo(null);
     } catch (e) {
       if (e instanceof ApiError) {
-        if (e.status === 422) setError(`Comment blocked: ${e.reason || "failed moderation"}`);
+        if (e.status === 422) setModReason(e.reason || "failed moderation");
         else if (e.status === 403) setError("Comments are turned off for this video.");
         else if (e.status === 429) setError("You're commenting too fast. Slow down.");
         else setError(e.message);
@@ -223,7 +226,14 @@ export function CommentsModal({ videoId, isOpen, onClose, commentCount, videoOwn
 
         {/* Input Area */}
         <div className="p-4 border-t border-white/10 bg-[#1a1a1a]">
-          {error && <p className="text-[#fe2c55] text-xs mb-2 px-1">{error}</p>}
+          {modReason ? (
+            <div className="mb-2 px-1">
+              <p className="text-[#fe2c55] text-xs font-semibold">🦙 the llama says no</p>
+              <p className="text-white/50 text-[11px] mt-0.5">{modReason}</p>
+            </div>
+          ) : error ? (
+            <p className="text-[#fe2c55] text-xs mb-2 px-1">{error}</p>
+          ) : null}
           {replyingTo && (
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-white/60 text-xs">

@@ -16,24 +16,27 @@ export function EditProfileModal({ isOpen, user, onClose, onSaved }: EditProfile
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modReason, setModReason] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setName(user.name);
       setBio(user.bio || "");
       setError(null);
+      setModReason(null);
     }
   }, [isOpen, user]);
 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    setModReason(null);
     try {
       const { user: updated } = await usersApi.updateMe({ name: name.trim(), bio: bio.trim() });
       onSaved(updated);
       onClose();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 422) setError(`Blocked: ${e.reason || "failed moderation"}`);
+      if (e instanceof ApiError && e.status === 422) setModReason(e.reason || "failed moderation");
       else if (e instanceof ApiError) setError(e.message);
       else setError("Couldn't save changes.");
     } finally {
@@ -61,7 +64,14 @@ export function EditProfileModal({ isOpen, user, onClose, onSaved }: EditProfile
           <p className="text-white/40 text-xs mt-3">@{user.username}</p>
         </div>
 
-        {error && <p className="text-[#fe2c55] text-sm mb-4">{error}</p>}
+        {modReason ? (
+          <div className="mb-4">
+            <p className="text-[#fe2c55] text-sm font-semibold">🦙 the llama says no</p>
+            <p className="text-white/50 text-xs mt-0.5">{modReason}</p>
+          </div>
+        ) : error ? (
+          <p className="text-[#fe2c55] text-sm mb-4">{error}</p>
+        ) : null}
 
         <div className="space-y-6">
           <div>

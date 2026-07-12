@@ -29,6 +29,14 @@ export const metadata: Metadata = {
     description: "GTM/growth engineering at Mintlify. This site has a TikTok in it on purpose.",
     type: "website",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "coleywoley tok",
+  },
+  icons: {
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({

@@ -149,6 +149,7 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
   const [showComments, setShowComments] = useState(false);
   const [commentsVideoId, setCommentsVideoId] = useState<number | null>(null);
   const [showProfile, setShowProfile] = useState<string | null>(null);
+  const [showMe, setShowMe] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [shareVideoId, setShareVideoId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -433,6 +434,7 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
     if (!requireAuth()) return;
     const v = findVideo(videoId);
     if (!v) return;
+    navigator.vibrate?.(10);
     const wasLiked = !!v.me?.liked;
     mapVideo(videoId, (x) => ({
       ...x,
@@ -456,6 +458,7 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
     if (!requireAuth()) return;
     const v = findVideo(videoId);
     if (!v) return;
+    navigator.vibrate?.(10);
     const wasSaved = !!v.me?.saved;
     mapVideo(videoId, (x) => ({
       ...x,
@@ -529,16 +532,35 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
   };
 
   /* ---------- nav gates ---------- */
+  // The three root-tab overlays are mutually exclusive: switching one closes the others,
+  // tapping the active tab drops back to the feed (Home).
+  const closeRootOverlays = () => { setShowDiscover(false); setShowInbox(false); setShowMe(false); };
+  const goHome = () => {
+    closeRootOverlays();
+    setActiveNavTab("home");
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    setCurrentIndex(0);
+  };
   const openCreate = () => { if (requireAuth()) setShowCreate(true); };
+  const openDiscover = () => {
+    if (activeNavTab === "discover") { goHome(); return; }
+    setShowInbox(false); setShowMe(false);
+    setActiveNavTab("discover");
+    setShowDiscover(true);
+  };
   const openInbox = () => {
+    if (activeNavTab === "inbox") { goHome(); return; }
     if (!requireAuth()) return;
+    setShowDiscover(false); setShowMe(false);
     setActiveNavTab("inbox");
     setShowInbox(true);
   };
   const openMe = () => {
+    if (activeNavTab === "me") { goHome(); return; }
     if (!requireAuth()) return;
+    setShowDiscover(false); setShowInbox(false);
     setActiveNavTab("me");
-    setShowProfile(user!.username);
+    setShowMe(true);
   };
 
   const commentsVideo = commentsVideoId ? findVideo(commentsVideoId) : null;
@@ -600,6 +622,8 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
                   muted={muted}
                   playbackRate={playbackRate}
                   loop={false}
+                  poster={video.thumbUrl}
+                  preloadAuto={index > currentIndex && index <= currentIndex + 2}
                   onTogglePause={() => setIsPaused((prev) => ({ ...prev, [video.id]: !prev[video.id] }))}
                   onToggleMute={() => setMuted((m) => !m)}
                   onEnded={handleVideoEnded}
@@ -783,6 +807,33 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
             <div className="w-7 h-7 border-[3px] border-white/25 border-t-white rounded-full animate-spin" />
           </div>
         )}
+
+        {/* ---- Root-tab overlays: render above the feed but INSIDE this area, so the
+                bottom nav (a sibling below) stays visible and tappable. ---- */}
+        <DiscoverModal
+          isOpen={showDiscover}
+          onClose={() => { setShowDiscover(false); setActiveNavTab("home"); }}
+          onHashtagClick={(tag) => { setCurrentHashtag(tag); setShowHashtagPage(true); }}
+          onSoundClick={(name) => { setCurrentSoundName(name); setShowSoundPage(true); }}
+          onProfileClick={(username) => setShowProfile(username)}
+        />
+
+        <InboxModal
+          isOpen={showInbox}
+          onClose={() => { setShowInbox(false); setActiveNavTab("home"); refreshUnread(); }}
+          onAllRead={() => setUnreadNotifs(0)}
+        />
+
+        {/* Me tab — the logged-in user's own profile, stays under the nav */}
+        {showMe && user && (
+          <div className="absolute inset-0 z-40 animate-tab-overlay">
+            <ProfileModal
+              username={user.username}
+              isOpen={showMe}
+              onClose={() => { setShowMe(false); setActiveNavTab("home"); }}
+            />
+          </div>
+        )}
       </div>
 
       {/* ---- Bottom nav ---- */}
@@ -795,17 +846,13 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
             icon={<NavHomeIcon active={activeNavTab === "home"} />}
             label="Home"
             active={activeNavTab === "home"}
-            onClick={() => {
-              setActiveNavTab("home");
-              scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-              setCurrentIndex(0);
-            }}
+            onClick={goHome}
           />
           <NavBtn
             icon={<NavDiscoverIcon active={activeNavTab === "discover"} />}
             label="Discover"
             active={activeNavTab === "discover"}
-            onClick={() => { setActiveNavTab("discover"); setShowDiscover(true); }}
+            onClick={openDiscover}
           />
           {/* Create button */}
           <button onClick={openCreate} className="relative w-[46px] h-[30px] mt-[1px] active:scale-95 transition">
@@ -907,20 +954,6 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
         </div>
       )}
 
-      <DiscoverModal
-        isOpen={showDiscover}
-        onClose={() => { setShowDiscover(false); setActiveNavTab("home"); }}
-        onHashtagClick={(tag) => { setCurrentHashtag(tag); setShowHashtagPage(true); }}
-        onSoundClick={(name) => { setCurrentSoundName(name); setShowSoundPage(true); }}
-        onProfileClick={(username) => setShowProfile(username)}
-      />
-
-      <InboxModal
-        isOpen={showInbox}
-        onClose={() => { setShowInbox(false); setActiveNavTab("home"); refreshUnread(); }}
-        onAllRead={() => setUnreadNotifs(0)}
-      />
-
       <CreateModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
 
       <SoundPage
@@ -1006,10 +1039,20 @@ function FloatUpStyle() {
 }
 
 function RailBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
+  // Scale-pop the count whenever it changes (like/save), but not on first mount.
+  const [pop, setPop] = useState(false);
+  const prevLabel = useRef(label);
+  useEffect(() => {
+    if (prevLabel.current === label) return;
+    prevLabel.current = label;
+    setPop(true);
+    const t = setTimeout(() => setPop(false), 240);
+    return () => clearTimeout(t);
+  }, [label]);
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick?.(); }} className="flex flex-col items-center gap-[3px] text-white active:scale-90 transition">
       {icon}
-      <span className="text-[12px] font-semibold leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{label}</span>
+      <span className={`text-[12px] font-semibold leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] ${pop ? "animate-count-pop" : ""}`}>{label}</span>
     </button>
   );
 }
