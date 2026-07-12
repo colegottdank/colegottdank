@@ -42,7 +42,7 @@ Notification = { id: number, type: 'like'|'comment'|'follow'|'mention'|'moderati
 - `GET /api/videos/:id` → `{ video }`. 404 unless live, owner, or admin.
 - `POST /api/videos` — multipart form: `file` (video/mp4|webm, ≤100MB), `thumb` (image/jpeg, optional, client-extracted first frame), `caption` (≤300 chars), `hashtags`, `visibility`, `allowComments`. → `{ video }` with `status: 'pending'`. Flow: caption moderated sync (reject = 422 with reason), file stored to R2 `videos/{userId}/{uuid}.mp4`, thumb to `thumbs/...`, row inserted pending; `waitUntil` runs thumb vision moderation → status flips live/rejected + notification to owner. No thumb provided → moderate caption only, then live.
 - `DELETE /api/videos/:id` — owner or admin → `{ ok }` (status='removed', R2 object deleted).
-- `POST /api/videos/:id/view` → `{ ok }` (views++, no auth needed, best-effort).
+- `POST /api/videos/:id/view` → `{ ok }` (views++, no auth needed, best-effort). Also logs a `video_views` row (viewer id, or NULL if anonymous) that feeds the scored For You ranking.
 - `GET /api/media/:key+` — streams R2 object with Range support (video seeking) + Cache-Control. Keys are the r2_key stored on the video; only serve keys prefixed `videos/` or `thumbs/`.
 
 ### Reactions
@@ -95,3 +95,25 @@ Hashtag matching against the space-separated `hashtags` column must match whole 
 - After signup/login, `GET /api/auth/me` hydrates a `useAuth` context.
 - Upload: extract first frame client-side via canvas → send as `thumb`. Show the pending state ("Your video is being reviewed") on own profile.
 - Mobile (<lg): render the TikTok full-viewport (no phone frame). Cole's bio moves behind an "About Cole" entry point (button/link in top bar or a profile route). Desktop ≥lg unchanged.
+
+## Feed ranking (2026-07-11)
+
+`tab=foryou` is a scored ranking, not chronological. `tab=following` stays chronological (id cursor descending), unchanged.
+
+Candidate pool: latest 500 live+public videos, excluding the viewer's own when logged in. Each video is scored in JS:
+
+```
+base  = 4*likes + 6*comments + 5*saves + log10(views + 1)
+score = base / (ageHours + 6)^1.3
+score *= 1.5   if the creator is followed (logged-in viewer)
+score *= 0.2   if the viewer already viewed it (video_views)
+score *= 0.85 + 0.3*random()   // jitter, reshuffles each load
+```
+
+`ageHours` comes from `(julianday('now') - julianday(created_at)) * 24`. Videos are sorted by score descending, then sliced `[offset, offset+limit)`.
+
+Cursor semantics differ by tab and never cross-contaminate:
+- **foryou**: `cursor` is an opaque OFFSET into the ranked list (0-based). `nextCursor = offset + limit` when a full page returns, else `null`. Because of jitter, pages reshuffle between requests; the offset still advances and terminates at the pool boundary.
+- **following**: `cursor` is an opaque video id, descending (unchanged). `nextCursor` = last row's id when the page is full, else `null`.
+
+Frontend treats `cursor`/`nextCursor` as opaque, so no client change is needed. The `?v=<id>` share-link pinning is a frontend concern and uses `GET /api/videos/:id`, not the feed cursor.
