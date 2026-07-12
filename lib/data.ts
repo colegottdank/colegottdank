@@ -693,142 +693,6 @@ export const mockLikedVideos: Video[] = [
   videoRegistry[1004], videoRegistry[1005], videoRegistry[1006]
 ];
 
-export const mockSavedVideos: Video[] = [
-  videoRegistry[2001], videoRegistry[2002], videoRegistry[2003], 
-  videoRegistry[2004]
-];
-
-// Current user's videos
-export const currentUserVideos: Video[] = [
-  videoRegistry[9001], videoRegistry[9002], videoRegistry[9003]
-];
-
-// User profiles
-export interface UserProfile {
-  username: string;
-  name: string;
-  bio: string;
-  followers: number;
-  following: number;
-  likes: number;
-  videos: number;
-  verified: boolean;
-  avatar: string;
-}
-
-export const userProfiles: Record<string, UserProfile> = {
-  brainrot_king: {
-    username: "brainrot_king",
-    name: "Brainrot King",
-    bio: "Creating viral content since 2020 👑 Stay brainrotted",
-    followers: 2500000,
-    following: 45,
-    likes: 89200000,
-    videos: 456,
-    verified: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=brainrot"
-  },
-  sleepy_memer: {
-    username: "sleepy_memer",
-    name: "Sleepy Memer",
-    bio: "Memes 24/7 😴💤 Don't wake me up",
-    followers: 456000,
-    following: 123,
-    likes: 12300000,
-    videos: 234,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=sleepy"
-  },
-  fire_memes: {
-    username: "fire_memes",
-    name: "Fire Memes",
-    bio: "Only the spiciest memes 🔥🔥🔥",
-    followers: 89000,
-    following: 234,
-    likes: 3400000,
-    videos: 189,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=fire"
-  },
-  relatable_af: {
-    username: "relatable_af",
-    name: "Relatable AF",
-    bio: "Content that hits different 💯",
-    followers: 12000,
-    following: 567,
-    likes: 456000,
-    videos: 89,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=relatable"
-  },
-  selfcare_guru: {
-    username: "selfcare_guru",
-    name: "Selfcare Guru",
-    bio: "Your daily reminder to touch grass 🌱✨",
-    followers: 234000,
-    following: 89,
-    likes: 7800000,
-    videos: 567,
-    verified: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=selfcare"
-  },
-  vibe_master: {
-    username: "vibe_master",
-    name: "Vibe Master",
-    bio: "Good vibes only ✌️🎵",
-    followers: 1200000,
-    following: 156,
-    likes: 45600000,
-    videos: 1234,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=vibe"
-  },
-  meme_queen: {
-    username: "meme_queen",
-    name: "Meme Queen",
-    bio: "👑 Queen of memes 👑",
-    followers: 890000,
-    following: 234,
-    likes: 23000000,
-    videos: 678,
-    verified: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=memequeen"
-  },
-  toxic_gf: {
-    username: "toxic_gf",
-    name: "Toxic GF",
-    bio: "It's not me, it's you 💅",
-    followers: 567000,
-    following: 123,
-    likes: 12000000,
-    videos: 345,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=toxic"
-  },
-  gamer_rage: {
-    username: "gamer_rage",
-    name: "Gamer Rage",
-    bio: "Controller throwing champion 🎮💢",
-    followers: 2340000,
-    following: 456,
-    likes: 67000000,
-    videos: 890,
-    verified: true,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=gamer"
-  },
-  currentuser: {
-    username: "currentuser",
-    name: "You",
-    bio: "Just a gamer enjoying life 🎮",
-    followers: 1234,
-    following: 456,
-    likes: 89000,
-    videos: 23,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser"
-  }
-};
-
 // Comments
 export interface Comment {
   id: number;
@@ -839,17 +703,18 @@ export interface Comment {
   time: string;
 }
 
-export const initialComments: Comment[] = [
-  { id: 1, videoId: 1, username: "user1", text: "This is fire! 🔥", likes: 234, time: "2h" },
-  { id: 2, videoId: 1, username: "user2", text: "POV: you're scrolling through comments", likes: 189, time: "5h" },
-  { id: 3, videoId: 1, username: "user3", text: "The algorithm brought me here", likes: 567, time: "1d" },
-  { id: 4, videoId: 2, username: "user4", text: "This is so relatable 😂", likes: 123, time: "3h" },
-  { id: 5, videoId: 2, username: "user5", text: "Wait for it... 💀", likes: 456, time: "6h" },
-  { id: 6, videoId: 3, username: "user6", text: "Best video I've seen today", likes: 789, time: "1h" },
-  { id: 7, videoId: 4, username: "user7", text: "Why is this so accurate", likes: 234, time: "4h" },
-  { id: 8, videoId: 5, username: "user8", text: "This hit different", likes: 567, time: "2h" },
-  { id: 9, videoId: 6, username: "user9", text: "Me fr fr", likes: 890, time: "30m" }
-];
+// Device preferences (localStorage) — the ONLY local state that survives the API migration.
+const MUTE_PREF_KEY = 'cg_muted';
+
+export function getMutedPref(): boolean {
+  if (typeof window === 'undefined') return true;
+  const v = localStorage.getItem(MUTE_PREF_KEY);
+  return v === null ? true : v === '1';
+}
+
+export function setMutedPref(muted: boolean): void {
+  if (typeof window !== 'undefined') localStorage.setItem(MUTE_PREF_KEY, muted ? '1' : '0');
+}
 
 // LocalStorage helper functions
 const STORAGE_KEY = 'tiktok_clone_data';
@@ -928,46 +793,6 @@ export function saveUserState(state: UserState) {
   }
 }
 
-// Video like functions
-export function isVideoLiked(videoId: number): boolean {
-  const state = getUserState();
-  return state.likedVideos.includes(videoId);
-}
-
-export function addLikedVideo(videoId: number) {
-  const state = getUserState();
-  if (!state.likedVideos.includes(videoId)) {
-    state.likedVideos.push(videoId);
-    saveUserState(state);
-  }
-}
-
-export function removeLikedVideo(videoId: number) {
-  const state = getUserState();
-  state.likedVideos = state.likedVideos.filter(id => id !== videoId);
-  saveUserState(state);
-}
-
-// Video save functions
-export function isVideoSaved(videoId: number): boolean {
-  const state = getUserState();
-  return state.savedVideos.includes(videoId);
-}
-
-export function addSavedVideo(videoId: number) {
-  const state = getUserState();
-  if (!state.savedVideos.includes(videoId)) {
-    state.savedVideos.push(videoId);
-    saveUserState(state);
-  }
-}
-
-export function removeSavedVideo(videoId: number) {
-  const state = getUserState();
-  state.savedVideos = state.savedVideos.filter(id => id !== videoId);
-  saveUserState(state);
-}
-
 // Following functions
 export function isFollowing(username: string): boolean {
   const state = getUserState();
@@ -988,27 +813,6 @@ export function unfollowUser(username: string) {
   saveUserState(state);
 }
 
-// Comment functions
-export function getCommentsForVideo(videoId: number): Comment[] {
-  const state = getUserState();
-  return state.comments.filter(c => c.videoId === videoId);
-}
-
-export function addComment(comment: Comment) {
-  const state = getUserState();
-  state.comments.push(comment);
-  saveUserState(state);
-}
-
-// View tracking
-export function addViewedVideo(videoId: number) {
-  const state = getUserState();
-  if (!state.viewedVideos.includes(videoId)) {
-    state.viewedVideos.push(videoId);
-    saveUserState(state);
-  }
-}
-
 // Search history
 export function addToSearchHistory(query: string) {
   const state = getUserState();
@@ -1020,180 +824,6 @@ export function addToSearchHistory(query: string) {
     saveUserState(state);
   }
 }
-
-// Initialize default data
-export function initializeDefaultData(): void {
-  const state = getUserState();
-  if (state.comments.length === 0) {
-    state.comments = [...initialComments];
-    saveUserState(state);
-  }
-}
-
-// Comment like persistence
-export function isCommentLiked(commentId: number): boolean {
-  const state = getUserState();
-  return state.likedComments?.includes(commentId) || false;
-}
-
-export function likeComment(commentId: number): void {
-  const state = getUserState();
-  if (!state.likedComments) {
-    state.likedComments = [];
-  }
-  if (!state.likedComments.includes(commentId)) {
-    state.likedComments.push(commentId);
-    saveUserState(state);
-  }
-}
-
-export function unlikeComment(commentId: number): void {
-  const state = getUserState();
-  if (state.likedComments) {
-    state.likedComments = state.likedComments.filter(id => id !== commentId);
-    saveUserState(state);
-  }
-}
-
-// Get all liked videos details
-export function getLikedVideos(): Video[] {
-  const state = getUserState();
-  return sampleVideos.filter(v => state.likedVideos.includes(v.id));
-}
-
-// Get all saved videos details
-export function getSavedVideos(): Video[] {
-  const state = getUserState();
-  return sampleVideos.filter(v => state.savedVideos.includes(v.id));
-}
-
-// Enhanced Mock Notifications
-export const mockNotifications: Notification[] = [
-  {
-    id: 101,
-    type: 'like',
-    username: 'dance_queen',
-    text: 'liked your video',
-    read: false,
-    timestamp: 'Just now'
-  },
-  {
-    id: 102,
-    type: 'comment',
-    username: 'gaming_pro',
-    text: 'commented: "This is fire! 🔥"',
-    read: false,
-    timestamp: '5 min ago'
-  },
-  {
-    id: 103,
-    type: 'follow',
-    username: 'fitness_guru',
-    text: 'started following you',
-    read: false,
-    timestamp: '30 min ago'
-  },
-  {
-    id: 104,
-    type: 'mention',
-    username: 'art_studio',
-    text: 'mentioned you in a comment',
-    read: true,
-    timestamp: '2 hours ago'
-  },
-  {
-    id: 105,
-    type: 'like',
-    username: 'speed_demon',
-    text: 'liked your comment',
-    read: true,
-    timestamp: '5 hours ago'
-  },
-  {
-    id: 106,
-    type: 'follow',
-    username: 'chef_mike',
-    text: 'started following you',
-    read: true,
-    timestamp: '1 day ago'
-  },
-  {
-    id: 107,
-    type: 'comment',
-    username: 'dog_lover_99',
-    text: 'replied: "So cute! 🐕"',
-    read: true,
-    timestamp: '2 days ago'
-  },
-  {
-    id: 108,
-    type: 'mention',
-    username: 'photo_pro',
-    text: 'tagged you in a video',
-    read: true,
-    timestamp: '3 days ago'
-  }
-];
-
-// Enhanced Mock Messages
-export const mockMessages: Message[] = [
-  {
-    id: 1,
-    username: 'dance_queen',
-    text: 'Hey! Love your content 🔥 Want to collab?',
-    timestamp: 'Just now',
-    read: false,
-    sent: false
-  },
-  {
-    id: 2,
-    username: 'gaming_pro',
-    text: 'Thanks for the follow! Check out my latest video',
-    timestamp: '30 min ago',
-    read: false,
-    sent: false
-  },
-  {
-    id: 3,
-    username: 'fitness_guru',
-    text: 'Great workout video! 💪',
-    timestamp: '2 hours ago',
-    read: true,
-    sent: false
-  },
-  {
-    id: 4,
-    username: 'chef_mike',
-    text: 'Thanks for saving my recipe! Let me know if you try it',
-    timestamp: '5 hours ago',
-    read: true,
-    sent: false
-  },
-  {
-    id: 5,
-    username: 'art_studio',
-    text: 'Your art style is amazing! 🎨',
-    timestamp: '1 day ago',
-    read: true,
-    sent: false
-  },
-  {
-    id: 6,
-    username: 'speed_demon',
-    text: 'Nice racing clip! What car is that?',
-    timestamp: '2 days ago',
-    read: true,
-    sent: false
-  },
-  {
-    id: 7,
-    username: 'study_gram',
-    text: 'Thanks for the study motivation! 📚',
-    timestamp: '3 days ago',
-    read: true,
-    sent: false
-  }
-];
 
 // Mock Watch History
 export interface WatchHistoryItem {
@@ -1211,47 +841,6 @@ export const mockWatchHistory: WatchHistoryItem[] = [
   { video: sampleVideos[5], watchedAt: '2 days ago', progress: 90 },
   { video: mockLikedVideos[0], watchedAt: '2 days ago', progress: 100 },
   { video: mockLikedVideos[1], watchedAt: '3 days ago', progress: 75 }
-];
-
-// Mock Drafts
-export interface Draft {
-  id: string;
-  videoUrl: string;
-  thumbnail: string;
-  caption: string;
-  createdAt: string;
-  duration: string;
-  hasChanges: boolean;
-}
-
-export const mockDrafts: Draft[] = [
-  {
-    id: 'draft-001',
-    videoUrl: '/videos/skibidi-toilet.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400',
-    caption: 'skibidi toilet reaction but i lost my mind at the plot twist 🚽🤯 #brainrot',
-    createdAt: '2 hours ago',
-    duration: '0:45',
-    hasChanges: true
-  },
-  {
-    id: 'draft-002',
-    videoUrl: '/videos/among-us.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400',
-    caption: 'among us but every kill is perfectly timed to the beat 📮🎵 #amogus #sus',
-    createdAt: '5 hours ago',
-    duration: '1:20',
-    hasChanges: false
-  },
-  {
-    id: 'draft-003',
-    videoUrl: '/videos/sigma-edit.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400',
-    caption: 'sigma edit that goes so hard it should be illegal 🐺🔥 #grindset #phonk',
-    createdAt: '1 day ago',
-    duration: '0:30',
-    hasChanges: true
-  }
 ];
 
 // Mock Blocked Users
@@ -1316,51 +905,6 @@ export const mockMutedUsers: MutedUser[] = [
   }
 ];
 
-// Mock Analytics
-export interface VideoAnalytics {
-  videoId: number;
-  views: number;
-  likes: number;
-  shares: number;
-  comments: number;
-  watchTime: number;
-  completionRate: number;
-  trafficSources: { source: string; percentage: number }[];
-}
-
-export const mockAnalytics = {
-  totalViews: 1250000,
-  totalLikes: 89000,
-  totalShares: 34000,
-  totalComments: 5600,
-  totalFollowers: 1234,
-  followerGrowth: [
-    { date: '2024-01-01', count: 1200 },
-    { date: '2024-01-02', count: 1215 },
-    { date: '2024-01-03', count: 1230 },
-    { date: '2024-01-04', count: 1228 },
-    { date: '2024-01-05', count: 1240 },
-    { date: '2024-01-06', count: 1234 },
-    { date: '2024-01-07', count: 1250 }
-  ],
-  topVideos: [
-    { videoId: 1, views: 890000, likes: 47200 },
-    { videoId: 6, views: 1200000, likes: 65100 },
-    { videoId: 5, views: 678000, likes: 41200 }
-  ],
-  audienceDemographics: {
-    age: { '18-24': 45, '25-34': 30, '35-44': 15, '45+': 10 },
-    gender: { male: 60, female: 35, other: 5 },
-    location: { US: 40, UK: 20, CA: 15, Other: 25 }
-  },
-  trafficSources: [
-    { source: 'For You', percentage: 65 },
-    { source: 'Following', percentage: 20 },
-    { source: 'Profile', percentage: 10 },
-    { source: 'Search', percentage: 5 }
-  ]
-};
-
 // Report reasons
 export const reportReasons = [
   { id: 'spam', label: 'Spam', description: 'Misleading or repetitive content' },
@@ -1370,18 +914,6 @@ export const reportReasons = [
   { id: 'misinformation', label: 'Misinformation', description: 'False information that could cause harm' },
   { id: 'ip', label: 'Intellectual property violation', description: 'Using content without permission' },
   { id: 'other', label: 'Something else', description: 'Another reason not listed above' }
-];
-
-// Locations for location picker
-export const mockLocations = [
-  { id: 'nyc', name: 'New York, NY', country: 'United States' },
-  { id: 'la', name: 'Los Angeles, CA', country: 'United States' },
-  { id: 'london', name: 'London', country: 'United Kingdom' },
-  { id: 'tokyo', name: 'Tokyo', country: 'Japan' },
-  { id: 'paris', name: 'Paris', country: 'France' },
-  { id: 'sydney', name: 'Sydney', country: 'Australia' },
-  { id: 'dubai', name: 'Dubai', country: 'UAE' },
-  { id: 'mumbai', name: 'Mumbai', country: 'India' }
 ];
 
 // Privacy settings interface
