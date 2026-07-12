@@ -1,47 +1,47 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Camera, Check } from "lucide-react";
-import { UserProfile, getUserState, saveUserState } from "@/lib/data";
+import { X } from "lucide-react";
+import { users as usersApi, User, ApiError } from "@/lib/api-client";
 
 interface EditProfileModalProps {
   isOpen: boolean;
+  user: User;
   onClose: () => void;
+  onSaved: (updated: User) => void;
 }
 
-export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
-  const [profile, setProfile] = useState<UserProfile>({
-    username: "currentuser",
-    name: "You",
-    bio: "Just a gamer enjoying life 🎮",
-    followers: 1234,
-    following: 456,
-    likes: 89000,
-    videos: 23,
-    verified: false,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=currentuser&backgroundColor=b6e3f4"
-  });
-  const [editedName, setEditedName] = useState("");
-  const [editedBio, setEditedBio] = useState("");
-  const [editedUsername, setEditedUsername] = useState("");
+export function EditProfileModal({ isOpen, user, onClose, onSaved }: EditProfileModalProps) {
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [modReason, setModReason] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setEditedName(profile.name);
-      setEditedBio(profile.bio);
-      setEditedUsername(profile.username);
+      setName(user.name);
+      setBio(user.bio || "");
+      setError(null);
+      setModReason(null);
     }
-  }, [isOpen, profile]);
+  }, [isOpen, user]);
 
-  const handleSave = () => {
-    // In a real app, this would save to API
-    setProfile(prev => ({
-      ...prev,
-      name: editedName,
-      bio: editedBio,
-      username: editedUsername
-    }));
-    onClose();
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setModReason(null);
+    try {
+      const { user: updated } = await usersApi.updateMe({ name: name.trim(), bio: bio.trim() });
+      onSaved(updated);
+      onClose();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 422) setModReason(e.reason || "failed moderation");
+      else if (e instanceof ApiError) setError(e.message);
+      else setError("Couldn't save changes.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -50,93 +50,54 @@ export function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
     <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0f0f0f]">
-        <button 
-          onClick={onClose}
-          className="text-white/60 hover:text-white"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <button onClick={onClose} className="text-white/60 hover:text-white"><X className="w-6 h-6" /></button>
         <span className="text-white font-semibold text-lg">Edit profile</span>
-        <button 
-          onClick={handleSave}
-          className="text-[#fe2c55] font-semibold text-sm"
-        >
-          Save
+        <button onClick={handleSave} disabled={saving} className="text-[#fe2c55] font-semibold text-sm disabled:opacity-40">
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto bg-[#0f0f0f] p-6">
-        {/* Profile Photo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="relative">
-            <img
-              src={profile.avatar}
-              alt="Profile"
-              className="w-24 h-24 rounded-full bg-gray-700 border-2 border-white/10"
-            />
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#fe2c55] rounded-full flex items-center justify-center shadow-lg">
-              <Camera className="w-4 h-4 text-white" />
-            </button>
-          </div>
-          <button className="text-[#fe2c55] text-sm font-medium mt-3">
-            Change photo
-          </button>
+          <img src={user.avatarUrl} alt="Profile" className="w-24 h-24 rounded-full bg-gray-700 border-2 border-white/10" />
+          <p className="text-white/40 text-xs mt-3">@{user.username}</p>
         </div>
 
-        {/* Form Fields */}
+        {modReason ? (
+          <div className="mb-4">
+            <p className="text-[#fe2c55] text-sm font-semibold">🦙 the llama says no</p>
+            <p className="text-white/50 text-xs mt-0.5">{modReason}</p>
+          </div>
+        ) : error ? (
+          <p className="text-[#fe2c55] text-sm mb-4">{error}</p>
+        ) : null}
+
         <div className="space-y-6">
-          {/* Name */}
           <div>
             <label className="text-white/60 text-sm mb-2 block">Name</label>
             <input
               type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={30}
               className="w-full bg-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50"
               placeholder="Your name"
             />
-            <p className="text-white/40 text-xs mt-1">{editedName.length}/30</p>
+            <p className="text-white/40 text-xs mt-1">{name.length}/30</p>
           </div>
 
-          {/* Username */}
-          <div>
-            <label className="text-white/60 text-sm mb-2 block">Username</label>
-            <div className="flex items-center">
-              <span className="text-white/40 text-sm mr-1">@</span>
-              <input
-                type="text"
-                value={editedUsername}
-                onChange={(e) => setEditedUsername(e.target.value)}
-                className="flex-1 bg-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50"
-                placeholder="username"
-              />
-            </div>
-            <p className="text-white/40 text-xs mt-1">www.tiktok.com/@{editedUsername || "username"}</p>
-          </div>
-
-          {/* Bio */}
           <div>
             <label className="text-white/60 text-sm mb-2 block">Bio</label>
             <textarea
-              value={editedBio}
-              onChange={(e) => setEditedBio(e.target.value)}
-              placeholder="Add a bio..."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              maxLength={80}
+              placeholder="Add a bio…"
               className="w-full bg-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50 resize-none"
               rows={3}
             />
-            <p className="text-white/40 text-xs mt-1">{editedBio.length}/80</p>
-          </div>
-
-          {/* Private Account Toggle */}
-          <div className="flex items-center justify-between py-4 border-t border-white/10">
-            <div>
-              <p className="text-white font-medium text-sm">Private account</p>
-              <p className="text-white/40 text-xs mt-1">Only approved followers can see your videos</p>
-            </div>
-            <button className="w-12 h-6 bg-white/20 rounded-full relative transition-colors">
-              <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full" />
-            </button>
+            <p className="text-white/40 text-xs mt-1">{bio.length}/80</p>
           </div>
         </div>
       </div>

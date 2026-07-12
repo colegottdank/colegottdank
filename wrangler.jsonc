@@ -14,6 +14,25 @@
       "service": "colegottdank-site"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "colegottdank-tiktok",
+      "database_id": "eba59dea-bd61-4f3e-bef5-47d117dbce8c"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "colegottdank-videos"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "ADMIN_USERNAME": "cole"
+  },
   "routes": [
     { "pattern": "colegottdank.com/*", "zone_name": "colegottdank.com" },
     { "pattern": "www.colegottdank.com/*", "zone_name": "colegottdank.com" }

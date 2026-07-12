@@ -1,143 +1,144 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { 
-  X, Upload, Camera, Image as ImageIcon, Film, Smile, 
-  MapPin, Globe, MessageCircle, Users, Clock, Check,
-  ChevronRight, Save
-} from "lucide-react";
-import { mockLocations, mockDrafts, Draft } from "@/lib/data";
-import { toast } from "./Toast";
+import { useState, useRef } from "react";
+import { X, Upload, Globe, Users, MessageCircle, Check, ChevronRight, Loader2 } from "lucide-react";
+import { videos as videosApi, ApiError } from "@/lib/api-client";
 
 interface CreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPosted?: () => void;
 }
 
-export function CreateModal({ isOpen, onClose }: CreateModalProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState("");
+const MAX_BYTES = 100 * 1024 * 1024; // 100MB
+const ALLOWED = ["video/mp4", "video/webm"];
+
+type Visibility = "everyone" | "friends" | "private";
+
+// Grab the first frame of a video File as a JPEG blob (best-effort; resolves null on failure).
+function extractThumb(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+    const cleanup = () => URL.revokeObjectURL(url);
+    const fail = () => { cleanup(); resolve(null); };
+    video.onloadeddata = () => {
+      try { video.currentTime = Math.min(0.1, video.duration || 0.1); } catch { fail(); }
+    };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 720;
+        canvas.height = video.videoHeight || 1280;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return fail();
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((b) => { cleanup(); resolve(b); }, "image/jpeg", 0.8);
+      } catch { fail(); }
+    };
+    video.onerror = fail;
+  });
+}
+
+export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
+  const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [showDrafts, setShowDrafts] = useState(false);
-  const [drafts, setDrafts] = useState<Draft[]>(mockDrafts);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Settings
-  const [location, setLocation] = useState<string | null>(null);
-  const [visibility, setVisibility] = useState<'everyone' | 'friends' | 'private'>('everyone');
+  const [caption, setCaption] = useState("");
+  const [visibility, setVisibility] = useState<Visibility>("everyone");
   const [allowComments, setAllowComments] = useState(true);
-  const [allowDuet, setAllowDuet] = useState(true);
-  const [allowStitch, setAllowStitch] = useState(true);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showVisibilityPicker, setShowVisibilityPicker] = useState(false);
-  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
-  const [scheduledDate, setScheduledDate] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [modReason, setModReason] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"compose" | "review">("compose");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => {
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(null);
+    setPreview(null);
+    setCaption("");
+    setVisibility("everyone");
+    setAllowComments(true);
+    setUploading(false);
+    setProgress(0);
+    setError(null);
+    setModReason(null);
+    setPhase("compose");
+  };
+
+  const close = () => { reset(); onClose(); };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreview(url);
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setError(null);
+    setModReason(null);
+    if (!ALLOWED.includes(f.type)) {
+      setError("Only MP4 or WebM videos are supported.");
+      return;
     }
-  };
-
-  const loadDraft = (draft: Draft) => {
-    setPreview(draft.videoUrl);
-    setCaption(draft.caption);
-    setSelectedFile(new File([], "draft-video.mp4", { type: "video/mp4" }));
-    setShowDrafts(false);
-    toast.success("Draft loaded");
-  };
-
-  const saveDraft = () => {
-    const newDraft: Draft = {
-      id: `draft-${Date.now()}`,
-      videoUrl: preview || '',
-      thumbnail: preview || '',
-      caption: caption || 'Untitled draft',
-      createdAt: 'Just now',
-      duration: '0:30',
-      hasChanges: true
-    };
-    setDrafts(prev => [newDraft, ...prev]);
-    toast.success("Draft saved");
-  };
-
-  const deleteDraft = (id: string) => {
-    setDrafts(prev => prev.filter(d => d.id !== id));
-    toast.success("Draft deleted");
-  };
-
-  const handlePost = () => {
-    if (scheduledDate) {
-      toast.success(`Video scheduled for ${new Date(scheduledDate).toLocaleString()}`);
-    } else {
-      toast.success("Video posted successfully!");
+    if (f.size > MAX_BYTES) {
+      setError("Video must be 100MB or smaller.");
+      return;
     }
-    setSelectedFile(null);
-    setCaption("");
-    setPreview(null);
-    setLocation(null);
-    setScheduledDate(null);
-    onClose();
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const handlePost = async () => {
+    if (!file) return;
+    setUploading(true);
+    setProgress(0);
+    setError(null);
+    setModReason(null);
+    try {
+      const thumb = await extractThumb(file);
+      const hashtags = (caption.match(/#[\w]+/g) || []).join(" ");
+      const form = new FormData();
+      form.append("file", file);
+      if (thumb) form.append("thumb", new File([thumb], "thumb.jpg", { type: "image/jpeg" }));
+      form.append("caption", caption.slice(0, 300));
+      form.append("hashtags", hashtags);
+      form.append("visibility", visibility);
+      form.append("allowComments", String(allowComments));
+      await videosApi.create(form, setProgress);
+      setPhase("review");
+      onPosted?.();
+    } catch (e) {
+      if (e instanceof ApiError) {
+        if (e.status === 422) setModReason(e.reason || "failed moderation");
+        else if (e.status === 429) setError("Upload limit reached. Try again later.");
+        else if (e.status === 401) setError("Log in to upload.");
+        else setError(e.message);
+      } else {
+        setError("Upload failed. Try again.");
+      }
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (!isOpen) return null;
 
-  if (showDrafts) {
+  // Success / "being reviewed" state
+  if (phase === "review") {
     return (
-      <div className="absolute inset-0 bg-black/95 z-50 flex flex-col animate-in fade-in duration-300">
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <button onClick={() => setShowDrafts(false)} className="text-white/60 hover:text-white">
-            <X className="w-6 h-6" />
-          </button>
-          <span className="text-white font-semibold text-lg">Drafts</span>
-          <div className="w-10" />
+      <div className="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+        <div className="w-20 h-20 rounded-full bg-[#fe2c55]/20 flex items-center justify-center mb-5">
+          <Check className="w-10 h-10 text-[#fe2c55]" />
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-4">
-          {drafts.length === 0 ? (
-            <div className="text-center text-white/40 py-12">
-              <Save className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No drafts yet</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {drafts.map((draft) => (
-                <div key={draft.id} className="flex gap-3 p-3 bg-white/5 rounded-xl">
-                  <div className="w-24 h-32 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={draft.thumbnail} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium line-clamp-2">{draft.caption}</p>
-                    <p className="text-white/50 text-sm mt-1">{draft.createdAt}</p>
-                    <p className="text-white/40 text-xs mt-1">{draft.duration}</p>
-                    {draft.hasChanges && (
-                      <span className="inline-block mt-2 px-2 py-1 bg-[#fe2c55]/20 text-[#fe2c55] text-xs rounded-full">
-                        Has unsaved changes
-                      </span>
-                    )}
-                    <div className="flex gap-2 mt-3">
-                      <button 
-                        onClick={() => loadDraft(draft)}
-                        className="px-4 py-2 bg-[#fe2c55] text-white rounded-full text-sm font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => deleteDraft(draft.id)}
-                        className="px-4 py-2 bg-white/10 text-white rounded-full text-sm font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <h3 className="text-white text-xl font-semibold mb-2">Your video is being reviewed</h3>
+        <p className="text-white/60 text-sm max-w-xs mb-8">
+          It&rsquo;ll go live once it passes our automated check. You can see it on your profile with a &ldquo;Pending&rdquo; badge until then.
+        </p>
+        <button onClick={close} className="px-8 py-3 bg-[#fe2c55] text-white rounded-lg font-semibold text-sm">
+          Done
+        </button>
       </div>
     );
   }
@@ -146,32 +147,33 @@ export function CreateModal({ isOpen, onClose }: CreateModalProps) {
     <div className="absolute inset-0 bg-black/95 z-50 flex flex-col animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <button onClick={onClose} className="text-white/60 hover:text-white">
+        <button onClick={close} disabled={uploading} className="text-white/60 hover:text-white disabled:opacity-40">
           <X className="w-6 h-6" />
         </button>
-        <span className="text-white font-semibold text-lg">Create</span>
-        {selectedFile ? (
-          <div className="flex items-center gap-2">
-            <button onClick={saveDraft} className="text-white/60 hover:text-white">
-              <Save className="w-5 h-5" />
-            </button>
-            <button onClick={handlePost} className="text-[#fe2c55] font-semibold text-sm">
-              Post
-            </button>
-          </div>
-        ) : (
-          <button onClick={() => setShowDrafts(true)} className="text-white/60 hover:text-white">
-            <Save className="w-5 h-5" />
+        <span className="text-white font-semibold text-lg">Upload</span>
+        {file ? (
+          <button onClick={handlePost} disabled={uploading} className="text-[#fe2c55] font-semibold text-sm disabled:opacity-40">
+            {uploading ? "Posting…" : "Post"}
           </button>
+        ) : (
+          <div className="w-10" />
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {!selectedFile ? (
+        {modReason ? (
+          <div className="mb-3 px-1">
+            <p className="text-[#fe2c55] text-sm font-semibold">🦙 the llama says no</p>
+            <p className="text-white/50 text-xs mt-0.5">{modReason}</p>
+          </div>
+        ) : error ? (
+          <p className="text-[#fe2c55] text-sm mb-3 px-1">{error}</p>
+        ) : null}
+
+        {!file ? (
           <div className="space-y-4">
-            {/* Upload Options */}
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-white/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-white/40 transition-colors"
             >
@@ -179,107 +181,64 @@ export function CreateModal({ isOpen, onClose }: CreateModalProps) {
                 <Upload className="w-8 h-8 text-[#fe2c55]" />
               </div>
               <p className="text-white font-semibold mb-2">Upload video</p>
-              <p className="text-white/40 text-sm text-center">MP4 or WebM<br/>Up to 180 seconds</p>
+              <p className="text-white/40 text-sm text-center">MP4 or WebM<br />Up to 100MB</p>
             </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
-            {/* Quick Options */}
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => toast.info("Camera feature coming soon!")}
-                className="bg-white/10 rounded-xl p-6 flex flex-col items-center gap-3 hover:bg-white/20 transition-colors"
-              >
-                <Camera className="w-8 h-8 text-white" />
-                <span className="text-white text-sm font-medium">Record</span>
-              </button>
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-white/10 rounded-xl p-6 flex flex-col items-center gap-3 hover:bg-white/20 transition-colors"
-              >
-                <ImageIcon className="w-8 h-8 text-white" />
-                <span className="text-white text-sm font-medium">Templates</span>
-              </button>
-            </div>
-
-            {/* Tips */}
-            <div className="bg-white/5 rounded-xl p-4">
-              <h3 className="text-white font-semibold mb-2">Tips</h3>
-              <ul className="text-white/60 text-sm space-y-2">
-                <li className="flex items-center gap-2">
-                  <Film className="w-4 h-4" />
-                  Use high quality videos for best results
-                </li>
-                <li className="flex items-center gap-2">
-                  <Smile className="w-4 h-4" />
-                  Add trending sounds to go viral
-                </li>
-              </ul>
-            </div>
+            <input ref={fileInputRef} type="file" accept="video/mp4,video/webm" onChange={handleFileSelect} className="hidden" />
           </div>
         ) : (
           <div className="space-y-4">
             {/* Preview */}
             <div className="aspect-[9/16] max-h-[400px] bg-black rounded-xl overflow-hidden">
-              {preview && (
-                <video src={preview} className="w-full h-full object-contain" controls />
-              )}
+              {preview && <video src={preview} className="w-full h-full object-contain" controls muted />}
             </div>
 
-            {/* Caption Input */}
+            {/* Upload progress */}
+            {uploading && (
+              <div className="space-y-1">
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#fe2c55] transition-all" style={{ width: `${progress}%` }} />
+                </div>
+                <p className="text-white/50 text-xs text-right">{progress}%</p>
+              </div>
+            )}
+
+            {/* Caption */}
             <div>
               <label className="text-white/60 text-sm mb-2 block">Caption</label>
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="Describe your video..."
+                maxLength={300}
+                placeholder="Describe your video… use #hashtags"
                 className="w-full bg-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50 resize-none"
                 rows={3}
               />
+              <p className="text-white/40 text-xs mt-1 text-right">{caption.length}/300</p>
             </div>
 
-            {/* Location */}
-            <button 
-              onClick={() => setShowLocationPicker(true)}
-              className="w-full flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-white/60" />
-                <span className="text-white text-sm">{location || "Add location"}</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-white/40" />
-            </button>
-
             {/* Visibility */}
-            <button 
+            <button
               onClick={() => setShowVisibilityPicker(true)}
               className="w-full flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
             >
               <div className="flex items-center gap-3">
-                {visibility === 'everyone' ? <Globe className="w-5 h-5 text-white/60" /> :
-                 visibility === 'friends' ? <Users className="w-5 h-5 text-white/60" /> :
+                {visibility === "everyone" ? <Globe className="w-5 h-5 text-white/60" /> :
+                 visibility === "friends" ? <Users className="w-5 h-5 text-white/60" /> :
                  <X className="w-5 h-5 text-white/60" />}
                 <span className="text-white text-sm">
-                  {visibility === 'everyone' ? 'Everyone' :
-                   visibility === 'friends' ? 'Friends only' : 'Private'}
+                  {visibility === "everyone" ? "Everyone" : visibility === "friends" ? "Friends only" : "Only me"}
                 </span>
               </div>
               <ChevronRight className="w-5 h-5 text-white/40" />
             </button>
 
-            {/* Allow Comments Toggle */}
+            {/* Allow comments */}
             <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
               <div className="flex items-center gap-3">
                 <MessageCircle className="w-5 h-5 text-white/60" />
                 <span className="text-white text-sm">Allow comments</span>
               </div>
-              <button 
+              <button
                 onClick={() => setAllowComments(!allowComments)}
                 className={`w-12 h-6 rounded-full relative transition-colors ${allowComments ? "bg-[#fe2c55]" : "bg-white/20"}`}
               >
@@ -287,49 +246,10 @@ export function CreateModal({ isOpen, onClose }: CreateModalProps) {
               </button>
             </div>
 
-            {/* Allow Duet Toggle */}
-            <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-              <span className="text-white text-sm">Allow duet</span>
-              <button 
-                onClick={() => setAllowDuet(!allowDuet)}
-                className={`w-12 h-6 rounded-full relative transition-colors ${allowDuet ? "bg-[#fe2c55]" : "bg-white/20"}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${allowDuet ? "left-7" : "left-1"}`} />
-              </button>
-            </div>
-
-            {/* Allow Stitch Toggle */}
-            <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-              <span className="text-white text-sm">Allow stitch</span>
-              <button 
-                onClick={() => setAllowStitch(!allowStitch)}
-                className={`w-12 h-6 rounded-full relative transition-colors ${allowStitch ? "bg-[#fe2c55]" : "bg-white/20"}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${allowStitch ? "left-7" : "left-1"}`} />
-              </button>
-            </div>
-
-            {/* Schedule Post */}
-            <button 
-              onClick={() => setShowSchedulePicker(true)}
-              className="w-full flex items-center justify-between p-4 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-white/60" />
-                <span className="text-white text-sm">
-                  {scheduledDate ? `Scheduled for ${new Date(scheduledDate).toLocaleString()}` : "Schedule post"}
-                </span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-white/40" />
-            </button>
-
-            {/* Change Video */}
-            <button 
-              onClick={() => {
-                setSelectedFile(null);
-                setPreview(null);
-              }}
-              className="w-full py-3 text-[#fe2c55] text-sm font-medium"
+            <button
+              onClick={() => { if (preview) URL.revokeObjectURL(preview); setFile(null); setPreview(null); setError(null); setModReason(null); }}
+              disabled={uploading}
+              className="w-full py-3 text-[#fe2c55] text-sm font-medium disabled:opacity-40"
             >
               Choose different video
             </button>
@@ -337,40 +257,15 @@ export function CreateModal({ isOpen, onClose }: CreateModalProps) {
         )}
       </div>
 
-      {/* Location Picker */}
-      {showLocationPicker && (
-        <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <button onClick={() => setShowLocationPicker(false)} className="text-white/60 hover:text-white">
-              <X className="w-6 h-6" />
-            </button>
-            <span className="text-white font-semibold text-lg">Add Location</span>
-            <div className="w-10" />
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-2">
-              <button 
-                onClick={() => { setLocation(null); setShowLocationPicker(false); }}
-                className="w-full p-4 text-white text-left hover:bg-white/5 rounded-xl"
-              >
-                No location
-              </button>
-              {mockLocations.map((loc) => (
-                <button 
-                  key={loc.id}
-                  onClick={() => { setLocation(loc.name); setShowLocationPicker(false); toast.success(`Location: ${loc.name}`); }}
-                  className="w-full p-4 text-left hover:bg-white/5 rounded-xl"
-                >
-                  <p className="text-white font-medium">{loc.name}</p>
-                  <p className="text-white/50 text-sm">{loc.country}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Big progress overlay while uploading */}
+      {uploading && (
+        <div className="absolute inset-0 bg-black/60 z-10 flex flex-col items-center justify-center pointer-events-none">
+          <Loader2 className="w-10 h-10 text-white animate-spin mb-3" />
+          <p className="text-white text-sm">Uploading {progress}%</p>
         </div>
       )}
 
-      {/* Visibility Picker */}
+      {/* Visibility picker */}
       {showVisibilityPicker && (
         <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -382,59 +277,24 @@ export function CreateModal({ isOpen, onClose }: CreateModalProps) {
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-2">
-              {[
-                { value: 'everyone', label: 'Everyone', icon: Globe },
-                { value: 'friends', label: 'Friends only', icon: Users },
-                { value: 'private', label: 'Only me', icon: X }
-              ].map((option) => (
-                <button 
+              {([
+                { value: "everyone", label: "Everyone", icon: Globe },
+                { value: "friends", label: "Friends only", icon: Users },
+                { value: "private", label: "Only me", icon: X },
+              ] as const).map((option) => (
+                <button
                   key={option.value}
-                  onClick={() => { setVisibility(option.value as any); setShowVisibilityPicker(false); toast.success(`Visibility: ${option.label}`); }}
+                  onClick={() => { setVisibility(option.value); setShowVisibilityPicker(false); }}
                   className="w-full p-4 flex items-center justify-between hover:bg-white/5 rounded-xl"
                 >
                   <div className="flex items-center gap-3">
                     <option.icon className="w-5 h-5 text-white/60" />
                     <span className="text-white">{option.label}</span>
                   </div>
-                  {visibility === option.value && (
-                    <Check className="w-5 h-5 text-[#fe2c55]" />
-                  )}
+                  {visibility === option.value && <Check className="w-5 h-5 text-[#fe2c55]" />}
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Schedule Picker */}
-      {showSchedulePicker && (
-        <div className="absolute inset-0 bg-black z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <button onClick={() => setShowSchedulePicker(false)} className="text-white/60 hover:text-white">
-              <X className="w-6 h-6" />
-            </button>
-            <span className="text-white font-semibold text-lg">Schedule Post</span>
-            <div className="w-10" />
-          </div>
-          <div className="flex-1 p-4">
-            <input 
-              type="datetime-local"
-              onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full bg-white/10 text-white p-4 rounded-xl"
-            />
-            <button 
-              onClick={() => { 
-                if (scheduledDate) {
-                  setShowSchedulePicker(false); 
-                  toast.success(`Post scheduled!`);
-                } else {
-                  toast.error("Please select a date and time");
-                }
-              }}
-              className="w-full mt-4 py-3 bg-[#fe2c55] text-white rounded-xl font-semibold"
-            >
-              Confirm Schedule
-            </button>
           </div>
         </div>
       )}
