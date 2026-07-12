@@ -1045,7 +1045,7 @@ function NatPortfolio() {
   return (
     <div className="w-full h-full bg-white overflow-y-auto">
       <div
-        className="max-w-[560px] mx-auto lg:mx-0 px-8 py-16 lg:py-24 text-black text-[16px] leading-[1.6]"
+        className="max-w-[560px] mx-auto lg:mx-0 px-8 py-16 lg:pt-0 lg:pb-24 text-black text-[16px] leading-[1.6]"
         style={{ fontFamily: '"Times New Roman", Times, Georgia, serif' }}
       >
         <h1 className="text-[19px] font-bold mb-7">Cole Gottdank</h1>
@@ -1112,8 +1112,11 @@ export default function Page() {
         <div className="flex shrink-0 h-full items-center lg:mr-16 xl:mr-24">
           <TikTokMobile framed onOpenAbout={() => setShowAbout(true)} />
         </div>
-        <div className="h-full min-w-0 w-full lg:w-[600px] lg:shrink-0">
-          <NatPortfolio />
+        <div className="h-full min-w-0 w-full lg:w-[600px] lg:shrink-0 flex items-center">
+          {/* Match the phone frame's height so the bio's first line aligns with its top edge */}
+          <div className="w-full max-h-full lg:h-[772px] overflow-y-auto">
+            <NatPortfolio />
+          </div>
         </div>
       </main>
     );
