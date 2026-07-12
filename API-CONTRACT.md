@@ -75,6 +75,18 @@ Notification = { id: number, type: 'like'|'comment'|'follow'|'mention'|'moderati
 - `moderateImage(env, bytes)` → same shape, via `@cf/llava-hf/llava-1.5-7b-hf` prompt asking for unsafe-content classification, parsed conservatively.
 - Rate limits (per user, in D1 or memory-best-effort): 5 uploads/day, 20 comments/min → 429.
 
+## Discovery (addendum, 2026-07-11)
+
+All discovery reads are public (no auth). Only live+public videos are ever counted or returned.
+
+- `GET /api/search?q=<text>` → `{ videos: Video[], users: User[] }`. Videos: caption or hashtags LIKE match. Users: username/name LIKE match. Limit 30 each. Empty q → 400.
+- `GET /api/trending/hashtags` → `{ hashtags: [{ tag: string, videos: number, views: number }] }` — aggregated from live videos' hashtags column, ordered by total views desc, top 10.
+- `GET /api/trending/sounds` → `{ sounds: [{ name: string, videos: number, views: number }] }` — GROUP BY sound_name, same ordering, top 10.
+- `GET /api/hashtags/:tag/videos?sort=top|recent` → `{ videos }`. tag WITHOUT the # (URL-encoded). top = views desc, recent = created_at desc. Limit 30.
+- `GET /api/sounds/videos?name=<sound_name>&sort=top|recent` → `{ videos }` — exact sound_name match (query param because names contain spaces/slashes).
+
+Hashtag matching against the space-separated `hashtags` column must match whole tags (e.g. `' ' || hashtags || ' ' LIKE '% #tag %'`), not substrings.
+
 ## Frontend notes
 
 - `lib/api-client.ts`: typed thin fetch wrappers for all of the above, no framework.

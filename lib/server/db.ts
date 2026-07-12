@@ -150,7 +150,14 @@ export function normalizeHashtags(input: unknown): string {
     .filter(Boolean)
     .map((t) => (t.startsWith("#") ? t : `#${t}`))
     .slice(0, 30);
-  return JSON.stringify(cleaned);
+  // Space-separated storage so hashtag queries can whole-tag match with LIKE
+  // (parseHashtags still reads the legacy JSON-array form).
+  return cleaned.join(" ");
+}
+
+/** Escape LIKE wildcards so user input matches literally. Pair with `ESCAPE '\'`. */
+export function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
 async function count(env: Env, sql: string, ...binds: unknown[]): Promise<number> {

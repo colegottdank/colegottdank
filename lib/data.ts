@@ -681,13 +681,6 @@ export const sampleVideos: Video[] = [
   videoRegistry[10], videoRegistry[11], videoRegistry[12]
 ];
 
-export const followingVideos: Video[] = [
-  videoRegistry[101], videoRegistry[102], videoRegistry[103],
-  videoRegistry[104], videoRegistry[105], videoRegistry[106],
-  videoRegistry[107], videoRegistry[108], videoRegistry[109],
-  videoRegistry[110], videoRegistry[111], videoRegistry[112]
-];
-
 export const mockLikedVideos: Video[] = [
   videoRegistry[1001], videoRegistry[1002], videoRegistry[1003], 
   videoRegistry[1004], videoRegistry[1005], videoRegistry[1006]
@@ -935,33 +928,3 @@ export const defaultPrivacySettings: PrivacySettings = {
   showActivityStatus: true
 };
 
-// Trending data
-export const trendingHashtags = [
-  { tag: '#fyp', views: '45.2B views' },
-  { tag: '#viral', views: '23.1B views' },
-  { tag: '#trending', views: '18.7B views' },
-  { tag: '#foryou', views: '89.4B views' },
-  { tag: '#funny', views: '12.3B views' },
-  { tag: '#meme', views: '9.8B views' },
-  { tag: '#relatable', views: '15.6B views' },
-  { tag: '#brainrot', views: '2.1B views' }
-];
-
-export const trendingSounds = [
-  { id: 'sound-1', name: 'original sound - creator', videos: 2340000 },
-  { id: 'sound-2', name: 'sped up version', videos: 1890000 },
-  { id: 'sound-3', name: 'slowed + reverb', videos: 1560000 },
-  { id: 'sound-4', name: 'viral remix', videos: 1230000 },
-  { id: 'sound-5', name: 'trending audio', videos: 980000 }
-];
-
-export const searchSuggestions = [
-  'funny videos',
-  'trending memes',
-  'viral dances',
-  'cute animals',
-  'cooking recipes',
-  'fitness tips',
-  'travel hacks',
-  'study motivation'
-];

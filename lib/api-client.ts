@@ -72,6 +72,19 @@ export interface Notification {
 export type ProfileTab = "videos" | "liked" | "saved";
 export type FeedTab = "foryou" | "following";
 export type ReportTargetType = "video" | "comment" | "user";
+export type DiscoverSort = "top" | "recent";
+
+export interface TrendingHashtag {
+  tag: string;
+  videos: number;
+  views: number;
+}
+
+export interface TrendingSound {
+  name: string;
+  videos: number;
+  views: number;
+}
 
 /* ---------- Error type ---------- */
 
@@ -222,10 +235,28 @@ export const reports = {
   }) => request<{ ok: true }>("/api/reports", { method: "POST", ...json(input) }),
 };
 
+/* ---------- Discovery (search, trending, hashtag/sound listings) ---------- */
+
+export const discover = {
+  /** Full-text search. Empty q → 400. */
+  search: (q: string) =>
+    request<{ videos: Video[]; users: User[] }>(`/api/search?q=${encodeURIComponent(q)}`),
+  trendingHashtags: () =>
+    request<{ hashtags: TrendingHashtag[] }>("/api/trending/hashtags"),
+  trendingSounds: () =>
+    request<{ sounds: TrendingSound[] }>("/api/trending/sounds"),
+  /** `tag` is passed with or without a leading '#'; the '#' is stripped. */
+  hashtagVideos: (tag: string, sort: DiscoverSort = "top") =>
+    request<{ videos: Video[] }>(`/api/hashtags/${encodeURIComponent(tag.replace(/^#/, ""))}/videos?sort=${sort}`),
+  /** Sounds are identified by name (contains spaces/slashes → query param). */
+  soundVideos: (name: string, sort: DiscoverSort = "top") =>
+    request<{ videos: Video[] }>(`/api/sounds/videos?name=${encodeURIComponent(name)}&sort=${sort}`),
+};
+
 /* ---------- Helpers ---------- */
 
 /** Canonical share URL for a video. */
 export const shareUrl = (id: number) => `https://colegottdank.com/?v=${id}`;
 
-export const api = { auth, feed, videos, comments, users, notifications, reports };
+export const api = { auth, feed, videos, comments, users, notifications, reports, discover };
 export default api;

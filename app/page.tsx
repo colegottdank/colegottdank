@@ -911,6 +911,8 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
         isOpen={showDiscover}
         onClose={() => { setShowDiscover(false); setActiveNavTab("home"); }}
         onHashtagClick={(tag) => { setCurrentHashtag(tag); setShowHashtagPage(true); }}
+        onSoundClick={(name) => { setCurrentSoundName(name); setShowSoundPage(true); }}
+        onProfileClick={(username) => setShowProfile(username)}
       />
 
       <InboxModal
@@ -922,7 +924,6 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
       <CreateModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
 
       <SoundPage
-        soundId={null}
         soundName={currentSoundName}
         isOpen={showSoundPage}
         onClose={() => { setShowSoundPage(false); setCurrentSoundName(""); }}
