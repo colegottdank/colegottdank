@@ -7,14 +7,34 @@ import type { UserRow, VideoRow } from "./db";
 //
 // score = base / (ageHours + 6)^1.3
 //   base = 4*likes + 6*comments + 5*saves + log10(views + 1)
-// then: *1.5 if the creator is followed, *0.2 if the viewer already viewed it,
-// and *(0.85 + 0.3*rand) jitter so consecutive loads reshuffle slightly.
+// then: *1.5 if the creator is followed, *0.2 if the viewer already viewed it.
 //
-// The candidate pool is the latest 500 live+public videos (excluding the
-// viewer's own when logged in). Ranking happens in JS; offset/limit slices the
-// sorted list. See API-CONTRACT.md "Feed ranking".
+// Ordering is score-WEIGHTED SAMPLING (Efraimidis-Spirakis: sort by
+// u^(1/score) with u from a seeded RNG), not a plain sort — so every feed
+// session deals a fresh order biased toward high scores, TikTok-style. The
+// seed rides inside the cursor (seed*OFFSET_SPAN + offset), which keeps
+// pagination within one session deterministic and duplicate-free while a
+// refresh (no cursor -> new seed) reshuffles. See API-CONTRACT.md.
 
 const CANDIDATE_POOL = 500;
+export const OFFSET_SPAN = 100000; // cursor = seed * OFFSET_SPAN + offset
+export const MAX_SEED = 89999;
+
+export function newFeedSeed(): number {
+  return 1 + Math.floor(Math.random() * MAX_SEED);
+}
+
+/** Deterministic PRNG (mulberry32) so one seed yields one stable ordering. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 interface CandidateRow extends VideoRow {
   like_count: number;
@@ -30,6 +50,7 @@ interface CandidateRow extends VideoRow {
 export async function scoredForYou(
   env: Env,
   viewer: UserRow | null,
+  seed: number,
   offset: number,
   limit: number
 ): Promise<VideoRow[]> {
@@ -69,6 +90,7 @@ export async function scoredForYou(
     viewed = new Set((viewRes.results ?? []).map((r) => r.video_id));
   }
 
+  const rand = mulberry32(seed);
   const scored = pool.map((row) => {
     const likes = row.like_count ?? 0;
     const comments = row.comment_count ?? 0;
@@ -80,12 +102,15 @@ export async function scoredForYou(
     let score = base / Math.pow(ageHours + 6, 1.3);
     if (followed.has(row.user_id)) score *= 1.5;
     if (viewed.has(row.id)) score *= 0.2;
-    score *= 0.85 + 0.3 * Math.random();
 
-    return { row, score };
+    // Weighted sampling without replacement: order by u^(1/w). Higher scores
+    // win more often but never deterministically; epsilon keeps zero-engagement
+    // videos in the lottery.
+    const key = Math.pow(rand(), 1 / (score + 0.01));
+    return { row, key };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => b.key - a.key);
 
   return scored.slice(offset, offset + limit).map((s) => stripCandidate(s.row));
 }

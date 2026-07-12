@@ -107,13 +107,12 @@ base  = 4*likes + 6*comments + 5*saves + log10(views + 1)
 score = base / (ageHours + 6)^1.3
 score *= 1.5   if the creator is followed (logged-in viewer)
 score *= 0.2   if the viewer already viewed it (video_views)
-score *= 0.85 + 0.3*random()   // jitter, reshuffles each load
 ```
 
-`ageHours` comes from `(julianday('now') - julianday(created_at)) * 24`. Videos are sorted by score descending, then sliced `[offset, offset+limit)`.
+`ageHours` comes from `(julianday('now') - julianday(created_at)) * 24`. Ordering is score-weighted sampling without replacement (Efraimidis-Spirakis: sort by `u^(1/(score+0.01))`, `u` from a seeded mulberry32 RNG), then sliced `[offset, offset+limit)`. Every fresh session gets a new seed → a genuinely different order, still biased toward high scores.
 
 Cursor semantics differ by tab and never cross-contaminate:
-- **foryou**: `cursor` is an opaque OFFSET into the ranked list (0-based). `nextCursor = offset + limit` when a full page returns, else `null`. Because of jitter, pages reshuffle between requests; the offset still advances and terminates at the pool boundary.
+- **foryou**: `cursor` is opaque `seed*100000 + offset`. First request (no cursor) mints a random seed; `nextCursor` carries it forward, so pages within one session share the seed (deterministic order, no duplicates) while a refresh reshuffles. `nextCursor = null` past the pool boundary.
 - **following**: `cursor` is an opaque video id, descending (unchanged). `nextCursor` = last row's id when the page is full, else `null`.
 
 Frontend treats `cursor`/`nextCursor` as opaque, so no client change is needed. The `?v=<id>` share-link pinning is a frontend concern and uses `GET /api/videos/:id`, not the feed cursor.

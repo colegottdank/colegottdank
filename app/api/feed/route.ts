@@ -1,7 +1,7 @@
 import { getCtx, json, jsonError } from "@/lib/server/context";
 import { getSessionUser } from "@/lib/server/auth";
 import { mapVideos, type VideoRow } from "@/lib/server/db";
-import { scoredForYou } from "@/lib/server/feed";
+import { scoredForYou, newFeedSeed, OFFSET_SPAN } from "@/lib/server/feed";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +34,14 @@ export async function GET(request: Request) {
     return json({ videos, nextCursor });
   }
 
-  // For You: scored algorithm. Cursor semantics: opaque OFFSET into the ranked
-  // list (NOT an id). Never mixed with the following tab's id cursor.
-  const offset = cursor != null && Number.isFinite(cursor) && cursor > 0 ? Math.floor(cursor) : 0;
-  const rows = await scoredForYou(env, viewer ?? null, offset, limit);
+  // For You: scored sampling. Cursor semantics: opaque seed*OFFSET_SPAN+offset
+  // (NOT an id). No cursor = fresh session = new seed = new shuffle; within a
+  // session the seed keeps pages consistent and duplicate-free.
+  const packed = cursor != null && Number.isFinite(cursor) && cursor > 0 ? Math.floor(cursor) : null;
+  const seed = packed ? Math.floor(packed / OFFSET_SPAN) : newFeedSeed();
+  const offset = packed ? packed % OFFSET_SPAN : 0;
+  const rows = await scoredForYou(env, viewer ?? null, seed, offset, limit);
   const videos = await mapVideos(env, rows, viewer?.id ?? null);
-  const nextCursor = rows.length === limit ? offset + limit : null;
+  const nextCursor = rows.length === limit ? seed * OFFSET_SPAN + offset + limit : null;
   return json({ videos, nextCursor });
 }
