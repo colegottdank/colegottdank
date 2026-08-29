@@ -2,23 +2,32 @@ import { getCtx, json, jsonError } from "@/lib/server/context";
 import { createSession, hashPassword } from "@/lib/server/auth";
 import { getUserByUsername, getUserById, mapUser } from "@/lib/server/db";
 import { moderateText } from "@/lib/server/moderation";
+import { overIpLimit } from "@/lib/server/ratelimit";
+import { hasControlChars, hasLineBreaks, optString } from "@/lib/server/validate";
 
 export const dynamic = "force-dynamic";
 
 const USERNAME_RE = /^[a-z0-9_.]{3,24}$/;
+const MAX_PASSWORD = 256;
 
 export async function POST(request: Request) {
   const { env } = await getCtx();
-  let body: { username?: string; name?: string; password?: string };
+
+  // Account-creation spam: 10 signups / minute / IP.
+  if (await overIpLimit(env.AUTH_RL, "signup")) {
+    return jsonError("Too many signups from this network. Try again in a minute.", 429);
+  }
+
+  let body: { username?: unknown; name?: unknown; password?: unknown };
   try {
     body = await request.json();
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
 
-  const username = (body.username ?? "").trim().toLowerCase();
-  const name = (body.name ?? "").trim();
-  const password = body.password ?? "";
+  const username = (optString(body.username) ?? "").toLowerCase();
+  const name = optString(body.name) ?? "";
+  const password = typeof body.password === "string" ? body.password : "";
 
   if (!USERNAME_RE.test(username)) {
     return jsonError(
@@ -26,18 +35,19 @@ export async function POST(request: Request) {
       400
     );
   }
-  if (!name || name.length > 60) {
+  if (!name || name.length > 60 || hasControlChars(name) || hasLineBreaks(name)) {
     return jsonError("Name is required (max 60 chars)", 400);
   }
-  if (password.length < 8) {
-    return jsonError("Password must be at least 8 characters", 400);
+  if (password.length < 8 || password.length > MAX_PASSWORD) {
+    return jsonError("Password must be 8-256 characters", 400);
   }
 
   const existing = await getUserByUsername(env, username);
   if (existing) return jsonError("Username is taken", 409);
 
-  // Moderate username + name (fail-open on AI error).
-  const mod = await moderateText(env, `${username} ${name}`);
+  // Moderate username + name. Fail-closed.
+  const mod = await moderateText(env, `${username} ${name}`, "profile");
+  if (mod.errored) return jsonError(mod.reason ?? "Moderation unavailable", 503);
   if (!mod.ok) {
     return jsonError("Username or name failed moderation", 422, {
       reason: mod.reason,
@@ -45,7 +55,15 @@ export async function POST(request: Request) {
   }
 
   const { hash, salt } = await hashPassword(password);
-  const isAdmin = username === (env.ADMIN_USERNAME ?? "").toLowerCase() ? 1 : 0;
+  // Bootstrap-only: ADMIN_USERNAME grants admin solely while no admin exists,
+  // so the name cannot be squatted for escalation later.
+  let isAdmin = 0;
+  if (username === (env.ADMIN_USERNAME ?? "").toLowerCase()) {
+    const existingAdmin = await env.DB.prepare(
+      "SELECT 1 AS x FROM users WHERE is_admin = 1 LIMIT 1"
+    ).first();
+    isAdmin = existingAdmin ? 0 : 1;
+  }
 
   const inserted = await env.DB.prepare(
     "INSERT INTO users (username, name, password_hash, password_salt, is_admin) VALUES (?, ?, ?, ?, ?) RETURNING id"

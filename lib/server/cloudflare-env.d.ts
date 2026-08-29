@@ -9,6 +9,12 @@ declare global {
     AI: Ai;
     SESSION_SECRET: string;
     ADMIN_USERNAME: string;
+    /** Per-IP limiter for login + signup (10 per 60s, separate buckets). */
+    AUTH_RL?: RateLimit;
+    /** Per-IP, per-action limiter for comments/reports/follows/uploads (60 per 60s each). */
+    WRITE_RL?: RateLimit;
+    /** Per-IP+video limiter for view counting (3 per 10s). */
+    VIEW_RL?: RateLimit;
   }
 }
 

@@ -8,7 +8,12 @@ import {
 } from "@/lib/server/db";
 import { moderateText } from "@/lib/server/moderation";
 import { createNotification, notifyMentions } from "@/lib/server/notifications";
-import { commentsLastMinute, MAX_COMMENTS_PER_MINUTE } from "@/lib/server/ratelimit";
+import {
+  commentsLastMinute,
+  MAX_COMMENTS_PER_MINUTE,
+  overIpLimit,
+} from "@/lib/server/ratelimit";
+import { hasControlChars } from "@/lib/server/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -31,19 +36,25 @@ export async function POST(request: Request, { params }: Params) {
   const user = await getSessionUser(env);
   if (!user) return jsonError("Authentication required", 401);
 
+  if (await overIpLimit(env.WRITE_RL, "comment")) {
+    return jsonError("Too many requests", 429);
+  }
+
   const { id } = await params;
   const videoId = Number(id);
   if (!Number.isFinite(videoId)) return jsonError("Invalid video id", 400);
 
-  let body: { text?: string; parentId?: number | null };
+  let body: { text?: unknown; parentId?: unknown };
   try {
     body = await request.json();
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
-  const text = (body.text ?? "").trim();
+  if (typeof body.text !== "string") return jsonError("Comment text required", 400);
+  const text = body.text.trim();
   if (!text) return jsonError("Comment text required", 400);
   if (text.length > MAX_TEXT) return jsonError("Comment exceeds 500 characters", 400);
+  if (hasControlChars(text)) return jsonError("Invalid characters", 400);
 
   const video = await getVideoRow(env, videoId);
   if (!video || video.status !== "live") return jsonError("Not found", 404);
@@ -60,7 +71,9 @@ export async function POST(request: Request, { params }: Params) {
   let parentId: number | null = null;
   let parentCommenterId: number | null = null;
   if (body.parentId != null) {
-    const parent = await getCommentRow(env, Number(body.parentId));
+    const parentIdNum = Number(body.parentId);
+    if (!Number.isFinite(parentIdNum)) return jsonError("Parent comment not found", 400);
+    const parent = await getCommentRow(env, parentIdNum);
     if (!parent || parent.video_id !== videoId || parent.status !== "live") {
       return jsonError("Parent comment not found", 400);
     }
@@ -69,8 +82,9 @@ export async function POST(request: Request, { params }: Params) {
     parentCommenterId = parent.user_id;
   }
 
-  // Sync text moderation.
-  const mod = await moderateText(env, text);
+  // Sync text moderation. Fail-closed.
+  const mod = await moderateText(env, text, "comment");
+  if (mod.errored) return jsonError(mod.reason ?? "Moderation unavailable", 503);
   if (!mod.ok) return jsonError("Comment failed moderation", 422, { reason: mod.reason });
 
   const inserted = await env.DB.prepare(

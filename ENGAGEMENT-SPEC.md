@@ -97,7 +97,7 @@ Every write from the tables above passes moderation before it's visible. Cheap m
 Non-model layers (do these regardless):
 - **Turnstile** on signup and upload — kills drive-by bots for free.
 - **Rate limits**: N comments/min, N uploads/day, N signups/IP/day.
-- **File constraints**: MP4/WebM only, ≤100MB, ≤3min, validated server-side.
+- **File constraints**: MP4/WebM only, ≤25MB, ≤3min, validated server-side.
 - **Report threshold**: X reports auto-hides content pending review.
 - **Kill switch**: env flag that freezes all writes site-wide.
 

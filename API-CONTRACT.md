@@ -40,10 +40,10 @@ Notification = { id: number, type: 'like'|'comment'|'follow'|'mention'|'moderati
 ### Feed & videos
 - `GET /api/feed?tab=foryou|following&cursor=<id>&limit=10` → `{ videos: Video[], nextCursor: number | null }`. foryou = all live public, newest first (cursor = id descending). following (auth) = only followed users. Viewer's own pending/rejected videos included in their profile listing only, never in feed.
 - `GET /api/videos/:id` → `{ video }`. 404 unless live, owner, or admin.
-- `POST /api/videos` — multipart form: `file` (video/mp4|webm, ≤100MB), `thumb` (image/jpeg, optional, client-extracted first frame), `caption` (≤300 chars), `hashtags`, `visibility`, `allowComments`. → `{ video }` with `status: 'pending'`. Flow: caption moderated sync (reject = 422 with reason), file stored to R2 `videos/{userId}/{uuid}.mp4`, thumb to `thumbs/...`, row inserted pending; `waitUntil` runs thumb vision moderation → status flips live/rejected + notification to owner. No thumb provided → moderate caption only, then live.
+- `POST /api/videos` — multipart form: `file` (video/mp4|webm, ≤25MB), `thumb` (image/jpeg, REQUIRED, ≤3MB, client-extracted first frame; 400 without it), `caption` (≤300 chars), `hashtags`, `visibility`, `allowComments`. → `{ video }` with `status: 'pending'`. Flow: caption moderated sync (reject = 422 with reason), file stored to R2 `videos/{userId}/{uuid}.mp4`, thumb to `thumbs/...`, row inserted pending; `waitUntil` runs thumb vision moderation → status flips live/rejected + notification to owner. File and thumb are magic-byte sniffed (415 on mismatch). Moderation unavailable → 503.
 - `DELETE /api/videos/:id` — owner or admin → `{ ok }` (status='removed', R2 object deleted).
 - `POST /api/videos/:id/view` → `{ ok }` (views++, no auth needed, best-effort). Also logs a `video_views` row (viewer id, or NULL if anonymous) that feeds the scored For You ranking.
-- `GET /api/media/:key+` — streams R2 object with Range support (video seeking) + Cache-Control. Keys are the r2_key stored on the video; only serve keys prefixed `videos/` or `thumbs/`.
+- `GET /api/media/:key+` — streams R2 object with Range support (video seeking) + Cache-Control. Keys are the r2_key stored on the video; only keys matching `videos/<userId>/<name>.(mp4|webm)` or `thumbs/<userId>/<name>.jpg` are served, with `nosniff` + sandbox CSP.
 
 ### Reactions
 - `POST /api/videos/:id/like` / `DELETE ...` → `{ likes: number }` (idempotent). Like creates notification for owner.
@@ -71,7 +71,7 @@ Notification = { id: number, type: 'like'|'comment'|'follow'|'mention'|'moderati
 - `POST /api/admin/moderate` (admin) `{ targetType, targetId, action: 'approve'|'remove'|'ban' }` → `{ ok }`.
 
 ### Moderation internals (lib/server/moderation.ts)
-- `moderateText(env, text)` → `{ ok: boolean, reason?: string }` using `env.AI.run('@cf/meta/llama-guard-3-8b', ...)` with the model's chat format; fail-open on AI errors (log, allow) so an AI outage doesn't brick the site — EXCEPT video thumbs which fail-closed to pending.
+- `moderateText(env, text, kind)` → `{ ok, reason?, errored? }` using `@cf/meta/llama-3.3-70b-instruct-fp8-fast` as a JSON-schema policy classifier (harassment, hate, sexual, violence, self-harm, spam, doxxing, illegal). FAIL-CLOSED: `errored` → callers return 503. Video thumbs (LLaVA) also fail closed to pending.
 - `moderateImage(env, bytes)` → same shape, via `@cf/llava-hf/llava-1.5-7b-hf` prompt asking for unsafe-content classification, parsed conservatively.
 - Rate limits (per user, in D1 or memory-best-effort): 5 uploads/day, 20 comments/min → 429.
 

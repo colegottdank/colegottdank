@@ -2,6 +2,7 @@ import { getCtx, json, jsonError, type Env } from "@/lib/server/context";
 import { requireAuth } from "@/lib/server/auth";
 import { getUserByUsername } from "@/lib/server/db";
 import { createNotification } from "@/lib/server/notifications";
+import { overIpLimit } from "@/lib/server/ratelimit";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,10 @@ export async function POST(_request: Request, { params }: Params) {
   const { env } = await getCtx();
   const user = await requireAuth(env);
   if (!user) return jsonError("Authentication required", 401);
+
+  if (await overIpLimit(env.WRITE_RL, "follow")) {
+    return jsonError("Too many requests", 429);
+  }
 
   const { username } = await params;
   const target = await getUserByUsername(env, username);

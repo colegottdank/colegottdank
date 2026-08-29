@@ -1,22 +1,30 @@
 import { getCtx, json, jsonError } from "@/lib/server/context";
 import { createSession, verifyPassword } from "@/lib/server/auth";
 import { getUserByUsername, mapUser } from "@/lib/server/db";
+import { overIpLimit } from "@/lib/server/ratelimit";
+import { optString } from "@/lib/server/validate";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const { env } = await getCtx();
-  let body: { username?: string; password?: string };
+  let body: { username?: unknown; password?: unknown };
   try {
     body = await request.json();
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
 
-  const username = (body.username ?? "").trim().toLowerCase();
-  const password = body.password ?? "";
+  const username = (optString(body.username) ?? "").toLowerCase().slice(0, 64);
+  const password = typeof body.password === "string" ? body.password : "";
   if (!username || !password) {
     return jsonError("Username and password required", 400);
+  }
+
+  // Brute-force protection: 10 attempts / minute / IP. (No per-username
+  // limiter: with a consume-on-check limiter that is a lockout DoS.)
+  if (await overIpLimit(env.AUTH_RL, "login")) {
+    return jsonError("Too many login attempts. Try again in a minute.", 429);
   }
 
   const row = await env.DB.prepare(

@@ -10,37 +10,52 @@ interface CreateModalProps {
   onPosted?: () => void;
 }
 
-const MAX_BYTES = 100 * 1024 * 1024; // 100MB
+const MAX_BYTES = 25 * 1024 * 1024; // 25MB (server buffers the upload in memory)
 const ALLOWED = ["video/mp4", "video/webm"];
 
 type Visibility = "everyone" | "friends" | "private";
 
-// Grab the first frame of a video File as a JPEG blob (best-effort; resolves null on failure).
-function extractThumb(file: File): Promise<Blob | null> {
+// Grab a frame of a video File as a JPEG blob. Resolves null on failure or
+// after THUMB_TIMEOUT_MS (Safari sometimes never fires seeked on blob URLs).
+const THUMB_TIMEOUT_MS = 8000;
+const THUMB_MAX_WIDTH = 720; // keeps the JPEG well under the server's 3MB cap
+function extractThumbAt(file: File, seekTo: number, timeoutMs = THUMB_TIMEOUT_MS): Promise<Blob | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
+    video.preload = "auto";
     video.src = url;
-    const cleanup = () => URL.revokeObjectURL(url);
-    const fail = () => { cleanup(); resolve(null); };
+    let settled = false;
+    const cleanup = () => { URL.revokeObjectURL(url); clearTimeout(timer); };
+    const finish = (b: Blob | null) => { if (settled) return; settled = true; cleanup(); resolve(b); };
+    const fail = () => finish(null);
+    const timer = setTimeout(fail, timeoutMs);
     video.onloadeddata = () => {
-      try { video.currentTime = Math.min(0.1, video.duration || 0.1); } catch { fail(); }
+      try { video.currentTime = Math.min(seekTo, video.duration || seekTo); } catch { fail(); }
     };
     video.onseeked = () => {
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth || 720;
-        canvas.height = video.videoHeight || 1280;
+        const w = video.videoWidth || 720;
+        const h = video.videoHeight || 1280;
+        const scale = Math.min(1, THUMB_MAX_WIDTH / w);
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
         const ctx = canvas.getContext("2d");
         if (!ctx) return fail();
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((b) => { cleanup(); resolve(b); }, "image/jpeg", 0.8);
+        canvas.toBlob((b) => finish(b), "image/jpeg", 0.8);
       } catch { fail(); }
     };
     video.onerror = fail;
   });
+}
+
+// The server requires a thumbnail (it's what gets moderated), so try twice.
+async function extractThumb(file: File): Promise<Blob | null> {
+  return (await extractThumbAt(file, 0.1)) ?? (await extractThumbAt(file, 1.0, 4000));
 }
 
 export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
@@ -83,7 +98,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
       return;
     }
     if (f.size > MAX_BYTES) {
-      setError("Video must be 100MB or smaller.");
+      setError("Video must be 25MB or smaller.");
       return;
     }
     setFile(f);
@@ -98,10 +113,14 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     setModReason(null);
     try {
       const thumb = await extractThumb(file);
+      if (!thumb) {
+        setError("Couldn't read a frame from this video. Try re-exporting it as MP4 (H.264).");
+        return;
+      }
       const hashtags = (caption.match(/#[\w]+/g) || []).join(" ");
       const form = new FormData();
       form.append("file", file);
-      if (thumb) form.append("thumb", new File([thumb], "thumb.jpg", { type: "image/jpeg" }));
+      form.append("thumb", new File([thumb], "thumb.jpg", { type: "image/jpeg" }));
       form.append("caption", caption.slice(0, 300));
       form.append("hashtags", hashtags);
       form.append("visibility", visibility);
@@ -181,7 +200,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
                 <Upload className="w-8 h-8 text-[#fe2c55]" />
               </div>
               <p className="text-white font-semibold mb-2">Upload video</p>
-              <p className="text-white/40 text-sm text-center">MP4 or WebM<br />Up to 100MB</p>
+              <p className="text-white/40 text-sm text-center">MP4 or WebM<br />Up to 25MB</p>
             </div>
             <input ref={fileInputRef} type="file" accept="video/mp4,video/webm" onChange={handleFileSelect} className="hidden" />
           </div>

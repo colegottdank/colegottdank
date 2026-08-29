@@ -6,16 +6,21 @@ type Params = { params: Promise<{ key: string[] }> };
 
 const CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+// Only keys this app writes: videos/<userId>/<name>.(mp4|webm), thumbs/<userId>/<name>.jpg
+// (<name> is a uuid for uploads; seeded videos use slugs like candy-making).
+const KEY_RE = /^(videos\/\d+\/[A-Za-z0-9_-][A-Za-z0-9._-]{0,99}\.(mp4|webm)|thumbs\/\d+\/[A-Za-z0-9_-][A-Za-z0-9._-]{0,99}\.jpg)$/;
+
 export async function GET(request: Request, { params }: Params) {
   const { env } = await getCtx();
   const { key: segments } = await params;
-  const key = (segments ?? []).map(decodeURIComponent).join("/");
+  let key: string;
+  try {
+    key = (segments ?? []).map(decodeURIComponent).join("/");
+  } catch {
+    return new Response("Forbidden", { status: 403 });
+  }
 
-  // Only serve media namespaces. Reject traversal / other prefixes.
-  if (
-    key.includes("..") ||
-    !(key.startsWith("videos/") || key.startsWith("thumbs/"))
-  ) {
+  if (!KEY_RE.test(key) || key.includes("..")) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -52,12 +57,19 @@ export async function GET(request: Request, { params }: Params) {
     r2Range = { offset: Number(startStr) };
   } else if (startStr !== "" && endStr !== "") {
     const offset = Number(startStr);
-    r2Range = { offset, length: Number(endStr) - offset + 1 };
+    const length = Number(endStr) - offset + 1;
+    if (length <= 0) return new Response("Invalid range", { status: 416 });
+    r2Range = { offset, length };
   } else {
     return new Response("Invalid range", { status: 416 });
   }
 
-  const object = await env.MEDIA.get(key, { range: r2Range });
+  let object: R2ObjectBody | null;
+  try {
+    object = await env.MEDIA.get(key, { range: r2Range });
+  } catch {
+    return new Response("Range not satisfiable", { status: 416 });
+  }
   if (!object) return new Response("Not found", { status: 404 });
 
   const total = object.size; // total object size
@@ -92,11 +104,14 @@ export async function GET(request: Request, { params }: Params) {
 
 function baseHeaders(object: R2Object, key: string): Headers {
   const headers = new Headers();
-  const contentType =
-    object.httpMetadata?.contentType ?? guessContentType(key);
-  headers.set("Content-Type", contentType);
+  // Trust the extension we validated in KEY_RE over whatever metadata says.
+  headers.set("Content-Type", guessContentType(key));
   headers.set("Accept-Ranges", "bytes");
   headers.set("Cache-Control", CACHE_CONTROL);
+  // User-uploaded bytes: never let the browser sniff or script them.
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Content-Security-Policy", "default-src 'none'; sandbox");
+  headers.set("Content-Disposition", "inline");
   if (object.httpEtag) headers.set("ETag", object.httpEtag);
   return headers;
 }
