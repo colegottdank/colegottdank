@@ -185,10 +185,21 @@ export async function moderateImage(
   bytes: Uint8Array
 ): Promise<ModerationResult> {
   try {
+    // base64 data URL, not `Array.from(bytes)`: a number[] costs 8 bytes per
+    // image byte and several frames in flight would exhaust Worker memory.
     const res = await aiRun(env, VISION_MODEL, {
-      image: Array.from(bytes),
-      prompt:
-        "You are a strict content-safety classifier for a public video site. Does this video frame contain any unsafe content: nudity, sexual content, graphic violence, gore, self-harm, hate symbols, weapons used threateningly, or other illegal content? Answer with exactly one word: SAFE or UNSAFE. If UNSAFE, add a short reason after a colon.",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "You are a strict content-safety classifier for a public video site. Does this video frame contain any unsafe content: nudity, sexual content, graphic violence, gore, self-harm, hate symbols, weapons used threateningly, or other illegal content? Answer with exactly one word: SAFE or UNSAFE. If UNSAFE, add a short reason after a colon.",
+            },
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${toBase64(bytes)}` } },
+          ],
+        },
+      ],
       max_tokens: 40,
     });
 
@@ -214,16 +225,33 @@ export async function moderateImage(
  * Moderate every sampled frame of a video in parallel. Any definite UNSAFE
  * rejects; otherwise any error/ambiguity keeps it pending; all SAFE -> ok.
  */
+const FRAME_CONCURRENCY = 3;
+
 export async function moderateFrames(
   env: Env,
   frames: Uint8Array[]
 ): Promise<ModerationResult> {
-  const results = await Promise.all(frames.map((f) => moderateImage(env, f)));
+  const results: ModerationResult[] = [];
+  for (let i = 0; i < frames.length; i += FRAME_CONCURRENCY) {
+    const batch = frames.slice(i, i + FRAME_CONCURRENCY);
+    results.push(...(await Promise.all(batch.map((f) => moderateImage(env, f)))));
+    // Stop early on a definite verdict; no point spending more calls.
+    if (results.some((r) => !r.ok && !r.errored)) break;
+  }
   const unsafe = results.find((r) => !r.ok && !r.errored);
   if (unsafe) return unsafe;
   const errored = results.find((r) => r.errored);
   if (errored) return errored;
   return { ok: true };
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
 }
 
 /** Pull a text field out of the various Workers AI response shapes. */

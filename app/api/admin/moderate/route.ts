@@ -65,9 +65,10 @@ export async function POST(request: Request) {
   } else {
     // user
     if (action === "allow_upload" || action === "deny_upload") {
-      await env.DB.prepare("UPDATE users SET can_upload = ? WHERE id = ?")
+      const res = await env.DB.prepare("UPDATE users SET can_upload = ? WHERE id = ?")
         .bind(action === "allow_upload" ? 1 : 0, targetId)
         .run();
+      if ((res.meta?.changes ?? 0) === 0) return jsonError("Not found", 404);
       return json({ ok: true });
     }
     if (action === "ban") {

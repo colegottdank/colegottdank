@@ -19,7 +19,7 @@ type Visibility = "everyone" | "friends" | "private";
 // Grab a frame of a video File as a JPEG blob. Resolves null on failure or
 // after THUMB_TIMEOUT_MS (Safari sometimes never fires seeked on blob URLs).
 const THUMB_TIMEOUT_MS = 8000;
-const THUMB_MAX_WIDTH = 720; // keeps the JPEG well under the server's 3MB cap
+const THUMB_MAX_WIDTH = 720; // keeps the JPEG well under the server's 1.5MB cap
 function extractThumbAt(file: File, seekTo: number, timeoutMs = THUMB_TIMEOUT_MS): Promise<Blob | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);

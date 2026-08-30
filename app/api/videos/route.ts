@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // The request body is buffered in Worker memory (OpenNext + formData), so keep
 // this well under the 128MB isolate limit.
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 25MB
-const MAX_THUMB_BYTES = 3 * 1024 * 1024; // 3MB
+const MAX_THUMB_BYTES = 1536 * 1024; // 1.5MB (client sends <=720px JPEGs, ~100-300KB)
 const MAX_EXTRA_FRAMES = 5;
 const VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
 const MAX_CAPTION = 300;
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     return jsonError("Thumbnail must be image/jpeg", 415);
   }
   if (thumb.size > MAX_THUMB_BYTES) {
-    return jsonError("Thumbnail exceeds 3MB", 413);
+    return jsonError("Thumbnail exceeds 1.5MB", 413);
   }
   if (!(await sniff(thumb, "image/jpeg"))) {
     return jsonError("Thumbnail is not a valid JPEG", 415);
@@ -169,7 +169,11 @@ export async function POST(request: Request) {
     )
     .first<{ id: number }>();
 
-  if (!inserted) return jsonError("Failed to create video", 500);
+  if (!inserted) {
+    // Don't leave orphans in R2 when the row didn't land.
+    await Promise.all([r2Key, thumbKey].map((k) => env.MEDIA.delete(k).catch(() => {})));
+    return jsonError("Failed to create video", 500);
+  }
   const videoId = inserted.id;
 
   // Async vision moderation over every sampled frame.
