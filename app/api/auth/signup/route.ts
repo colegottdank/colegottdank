@@ -2,7 +2,8 @@ import { getCtx, json, jsonError } from "@/lib/server/context";
 import { createSession, hashPassword } from "@/lib/server/auth";
 import { getUserByUsername, getUserById, mapUser } from "@/lib/server/db";
 import { moderateText } from "@/lib/server/moderation";
-import { overIpLimit } from "@/lib/server/ratelimit";
+import { clientIp, overIpLimit } from "@/lib/server/ratelimit";
+import { verifyTurnstile } from "@/lib/server/turnstile";
 import { hasControlChars, hasLineBreaks, optString } from "@/lib/server/validate";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     return jsonError("Too many signups from this network. Try again in a minute.", 429);
   }
 
-  let body: { username?: unknown; name?: unknown; password?: unknown };
+  let body: { username?: unknown; name?: unknown; password?: unknown; turnstileToken?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -44,6 +45,10 @@ export async function POST(request: Request) {
 
   const existing = await getUserByUsername(env, username);
   if (existing) return jsonError("Username is taken", 409);
+
+  // Bot check before we spend a moderation call.
+  const bot = await verifyTurnstile(env, body.turnstileToken, await clientIp());
+  if (!bot.ok) return jsonError(bot.reason ?? "Bot check failed", 400);
 
   // Moderate username + name. Fail-closed.
   const mod = await moderateText(env, `${username} ${name}`, "profile");

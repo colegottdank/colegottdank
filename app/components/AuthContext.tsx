@@ -10,7 +10,7 @@ interface AuthContextValue {
   /** Replace the cached viewer (after login/signup/profile edit). */
   setUser: (u: User | null) => void;
   login: (username: string, password: string) => Promise<void>;
-  signup: (username: string, name: string, password: string) => Promise<void>;
+  signup: (username: string, name: string, password: string, turnstileToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Returns true if authed. If not, opens the auth modal and returns false. */
   requireAuth: () => boolean;
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setModalOpen(false);
   }, []);
 
-  const signup = useCallback(async (username: string, name: string, password: string) => {
-    const { user } = await authApi.signup({ username, name, password });
+  const signup = useCallback(async (username: string, name: string, password: string, turnstileToken?: string) => {
+    const { user } = await authApi.signup({ username, name, password, turnstileToken });
     setUser(user);
     setModalOpen(false);
   }, []);

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { X, Upload, Globe, Users, MessageCircle, Check, ChevronRight, Loader2 } from "lucide-react";
 import { videos as videosApi, ApiError } from "@/lib/api-client";
+import { useAuth } from "./AuthContext";
 
 interface CreateModalProps {
   isOpen: boolean;
@@ -58,7 +59,36 @@ async function extractThumb(file: File): Promise<Blob | null> {
   return (await extractThumbAt(file, 0.1)) ?? (await extractThumbAt(file, 1.0, 4000));
 }
 
+function videoDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    const done = (d: number) => { URL.revokeObjectURL(url); resolve(Number.isFinite(d) ? d : 0); };
+    v.onloadedmetadata = () => done(v.duration);
+    v.onerror = () => done(0);
+    setTimeout(() => done(0), 5000);
+    v.src = url;
+  });
+}
+
+// Extra frames spread across the video so moderation sees more than the
+// opening shot. Best-effort: whatever decodes gets sent (max EXTRA_FRAMES).
+const EXTRA_FRAMES = 5;
+async function extractFrames(file: File): Promise<Blob[]> {
+  const d = await videoDuration(file);
+  if (d < 2) return [];
+  const out: Blob[] = [];
+  for (let i = 1; i <= EXTRA_FRAMES; i++) {
+    const t = (d * i) / (EXTRA_FRAMES + 1);
+    const b = await extractThumbAt(file, t, 4000);
+    if (b) out.push(b);
+  }
+  return out;
+}
+
 export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
+  const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
@@ -117,10 +147,13 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
         setError("Couldn't read a frame from this video. Try re-exporting it as MP4 (H.264).");
         return;
       }
+      setProgress(2);
+      const frames = await extractFrames(file);
       const hashtags = (caption.match(/#[\w]+/g) || []).join(" ");
       const form = new FormData();
       form.append("file", file);
       form.append("thumb", new File([thumb], "thumb.jpg", { type: "image/jpeg" }));
+      frames.forEach((f, i) => form.append("frames", new File([f], `frame-${i}.jpg`, { type: "image/jpeg" })));
       form.append("caption", caption.slice(0, 300));
       form.append("hashtags", hashtags);
       form.append("visibility", visibility);
@@ -131,7 +164,8 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.status === 422) setModReason(e.reason || "failed moderation");
-        else if (e.status === 429) setError("Upload limit reached. Try again later.");
+        else if (e.status === 429) setError(e.message || "Upload limit reached. Try again later.");
+        else if (e.status === 403) setError("Uploads are invite-only. Ask Cole.");
         else if (e.status === 401) setError("Log in to upload.");
         else setError(e.message);
       } else {
@@ -143,6 +177,24 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
   };
 
   if (!isOpen) return null;
+
+  // Invite-only uploads: show the gate instead of the form.
+  if (user && !user.canUpload) {
+    return (
+      <div className="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+        <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mb-5">
+          <Upload className="w-10 h-10 text-white/60" />
+        </div>
+        <h3 className="text-white text-xl font-semibold mb-2">Uploads are invite-only</h3>
+        <p className="text-white/60 text-sm max-w-xs mb-8">
+          This is one guy&rsquo;s personal site. Comments, likes and follows are open to everyone; posting videos needs a nod from Cole.
+        </p>
+        <button onClick={close} className="px-8 py-3 bg-white/10 text-white rounded-lg font-semibold text-sm">
+          Got it
+        </button>
+      </div>
+    );
+  }
 
   // Success / "being reviewed" state
   if (phase === "review") {

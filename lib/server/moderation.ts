@@ -1,4 +1,5 @@
 import type { Env } from "./context";
+import { withinDailyBudget } from "./budget";
 
 // Workers AI `.run` has heavily overloaded, model-specific typings; use a loose
 // call signature so we can pass model-appropriate inputs without fighting them.
@@ -29,6 +30,10 @@ export const MODERATION_UNAVAILABLE: ModerationResult = {
 
 /** One retry on a thrown AI error (transient capacity/network blips). */
 async function aiRun(env: Env, model: string, inputs: unknown): Promise<unknown> {
+  // Hard daily ceiling on inference spend; past it everything fails closed.
+  if (!(await withinDailyBudget(env, "ai_calls"))) {
+    throw new Error("AI daily budget exhausted");
+  }
   // Keep `this` bound: Ai.run uses private fields, so a detached reference throws.
   const ai = env.AI as unknown as { run: LooseAiRun };
   try {
@@ -169,20 +174,22 @@ export async function moderateText(
   return runPolicy(env, content, kind);
 }
 
+const VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+
 /**
- * Image moderation via LLaVA vision. Returns ok/reason plus `errored` on AI
- * failure. Callers decide fail-open vs fail-closed (video thumbs fail-closed).
+ * Image moderation via Llama 3.2 Vision. Returns ok/reason plus `errored` on
+ * AI failure or an unparseable answer. Callers fail closed (video stays pending).
  */
 export async function moderateImage(
   env: Env,
   bytes: Uint8Array
 ): Promise<ModerationResult> {
   try {
-    const res = await aiRun(env, "@cf/llava-hf/llava-1.5-7b-hf", {
-        image: Array.from(bytes),
-        prompt:
-          "You are a strict content-safety classifier. Does this image contain any unsafe content: nudity, sexual content, graphic violence, gore, self-harm, hate symbols, or other illegal content? Answer with exactly one word: SAFE or UNSAFE. If UNSAFE, add a short reason after a colon.",
-        max_tokens: 128,
+    const res = await aiRun(env, VISION_MODEL, {
+      image: Array.from(bytes),
+      prompt:
+        "You are a strict content-safety classifier for a public video site. Does this video frame contain any unsafe content: nudity, sexual content, graphic violence, gore, self-harm, hate symbols, weapons used threateningly, or other illegal content? Answer with exactly one word: SAFE or UNSAFE. If UNSAFE, add a short reason after a colon.",
+      max_tokens: 40,
     });
 
     const raw = extractText(res).trim();
@@ -201,6 +208,22 @@ export async function moderateImage(
     console.error("moderateImage AI error:", err);
     return { ok: false, errored: true };
   }
+}
+
+/**
+ * Moderate every sampled frame of a video in parallel. Any definite UNSAFE
+ * rejects; otherwise any error/ambiguity keeps it pending; all SAFE -> ok.
+ */
+export async function moderateFrames(
+  env: Env,
+  frames: Uint8Array[]
+): Promise<ModerationResult> {
+  const results = await Promise.all(frames.map((f) => moderateImage(env, f)));
+  const unsafe = results.find((r) => !r.ok && !r.errored);
+  if (unsafe) return unsafe;
+  const errored = results.find((r) => r.errored);
+  if (errored) return errored;
+  return { ok: true };
 }
 
 /** Pull a text field out of the various Workers AI response shapes. */

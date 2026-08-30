@@ -6,7 +6,7 @@ import { getVideoRow, getCommentRow } from "@/lib/server/db";
 export const dynamic = "force-dynamic";
 
 const TARGET_TYPES = new Set(["video", "comment", "user"]);
-const ACTIONS = new Set(["approve", "remove", "ban"]);
+const ACTIONS = new Set(["approve", "remove", "ban", "allow_upload", "deny_upload"]);
 
 export async function POST(request: Request) {
   const { env } = await getCtx();
@@ -36,6 +36,8 @@ export async function POST(request: Request) {
       await env.DB.prepare("UPDATE videos SET status = 'live' WHERE id = ?")
         .bind(targetId)
         .run();
+    } else if (action === "allow_upload" || action === "deny_upload") {
+      return jsonError("upload flags apply to users", 400);
     } else if (action === "remove") {
       await env.DB.prepare("UPDATE videos SET status = 'removed' WHERE id = ?")
         .bind(targetId)
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
       await env.DB.prepare("UPDATE comments SET status = 'live' WHERE id = ?")
         .bind(targetId)
         .run();
+    } else if (action === "allow_upload" || action === "deny_upload") {
+      return jsonError("upload flags apply to users", 400);
     } else if (action === "remove") {
       await env.DB.prepare("UPDATE comments SET status = 'removed' WHERE id = ?")
         .bind(targetId)
@@ -60,6 +64,12 @@ export async function POST(request: Request) {
     }
   } else {
     // user
+    if (action === "allow_upload" || action === "deny_upload") {
+      await env.DB.prepare("UPDATE users SET can_upload = ? WHERE id = ?")
+        .bind(action === "allow_upload" ? 1 : 0, targetId)
+        .run();
+      return json({ ok: true });
+    }
     if (action === "ban") {
       await env.DB.prepare("UPDATE users SET status = 'banned' WHERE id = ?")
         .bind(targetId)

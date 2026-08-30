@@ -11,6 +11,7 @@ export interface User {
   avatarUrl: string;
   verified: boolean;
   isAdmin: boolean;
+  canUpload: boolean;
   followers: number;
   following: number;
   likes: number;
@@ -131,7 +132,7 @@ const json = (data: unknown): RequestInit => ({ body: JSON.stringify(data) });
 /* ---------- Auth ---------- */
 
 export const auth = {
-  signup: (input: { username: string; name: string; password: string }) =>
+  signup: (input: { username: string; name: string; password: string; turnstileToken?: string }) =>
     request<{ user: User }>("/api/auth/signup", { method: "POST", ...json(input) }),
   login: (input: { username: string; password: string }) =>
     request<{ user: User }>("/api/auth/login", { method: "POST", ...json(input) }),

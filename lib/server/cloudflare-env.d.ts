@@ -9,6 +9,8 @@ declare global {
     AI: Ai;
     SESSION_SECRET: string;
     ADMIN_USERNAME: string;
+    /** Turnstile secret (wrangler secret). Bot check on signup is skipped while unset. */
+    TURNSTILE_SECRET?: string;
     /** Per-IP limiter for login + signup (10 per 60s, separate buckets). */
     AUTH_RL?: RateLimit;
     /** Per-IP, per-action limiter for comments/reports/follows/uploads (60 per 60s each). */

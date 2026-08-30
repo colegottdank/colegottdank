@@ -12,7 +12,8 @@ const isDev = process.env.NODE_ENV === "development";
 // Dev only: React's dev build needs eval, and LAN-IP testing can't upgrade to https.
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
+  "frame-src https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://api.dicebear.com",
   "media-src 'self' blob: https://github.com https://*.githubusercontent.com",

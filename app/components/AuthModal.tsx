@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { ApiError } from "@/lib/api-client";
+import { Turnstile, TURNSTILE_SITE_KEY } from "./Turnstile";
 
 interface AuthModalProps {
   isOpen: boolean;
   initialTab?: "login" | "signup";
   onClose: () => void;
   onLogin: (username: string, password: string) => Promise<void>;
-  onSignup: (username: string, name: string, password: string) => Promise<void>;
+  onSignup: (username: string, name: string, password: string, turnstileToken?: string) => Promise<void>;
 }
 
 const USERNAME_RE = /^[a-z0-9_.]{3,24}$/;
@@ -21,6 +22,8 @@ export function AuthModal({ isOpen, initialTab = "login", onLogin, onSignup, onC
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -51,12 +54,16 @@ export function AuthModal({ isOpen, initialTab = "login", onLogin, onSignup, onC
       setError("Add a display name.");
       return;
     }
+    if (tab === "signup" && TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Complete the bot check first.");
+      return;
+    }
     setBusy(true);
     try {
       if (tab === "login") {
         await onLogin(u, password);
       } else {
-        await onSignup(u, name.trim(), password);
+        await onSignup(u, name.trim(), password, turnstileToken ?? undefined);
       }
       setUsername("");
       setName("");
@@ -69,6 +76,8 @@ export function AuthModal({ isOpen, initialTab = "login", onLogin, onSignup, onC
       } else {
         setError("Something went wrong. Try again.");
       }
+      // Turnstile tokens are single-use; get a fresh one for the retry.
+      if (tab === "signup") setTurnstileReset((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -133,6 +142,8 @@ export function AuthModal({ isOpen, initialTab = "login", onLogin, onSignup, onC
             placeholder="password"
             className="w-full bg-white/10 rounded-lg px-4 py-3 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[#fe2c55]/50"
           />
+
+          {tab === "signup" && <Turnstile onToken={setTurnstileToken} resetKey={turnstileReset} />}
 
           {error && <p className="text-[#fe2c55] text-xs px-1">{error}</p>}
 

@@ -1,6 +1,7 @@
 import { getCtx, json, jsonError } from "@/lib/server/context";
 import { getSessionUser } from "@/lib/server/auth";
 import { mapVideos, type VideoRow } from "@/lib/server/db";
+import { dailyCounts, DAILY_LIMITS } from "@/lib/server/budget";
 
 export const dynamic = "force-dynamic";
 
@@ -44,5 +45,5 @@ export async function GET() {
 
   const pendingVideos = await mapVideos(env, pending ?? [], user.id);
 
-  return json({ reports, pendingVideos });
+  return json({ reports, pendingVideos, today: await dailyCounts(env), limits: DAILY_LIMITS });
 }

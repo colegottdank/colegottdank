@@ -12,6 +12,7 @@ export interface UserRow {
   avatar_key: string | null;
   is_admin: number;
   is_private: number;
+  can_upload: number;
   status: string; // 'active' | 'banned'
   created_at: string;
 }
@@ -53,6 +54,8 @@ export interface UserShape {
   avatarUrl: string;
   verified: boolean;
   isAdmin: boolean;
+  /** Invite-only uploads: admins flip this per account. */
+  canUpload: boolean;
   followers: number;
   following: number;
   likes: number;
@@ -219,6 +222,7 @@ export async function mapUser(
     avatarUrl: avatarUrl(row.username),
     verified: row.is_admin === 1,
     isAdmin: row.is_admin === 1,
+    canUpload: row.can_upload === 1,
     followers,
     following,
     likes,

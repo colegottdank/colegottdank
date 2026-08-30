@@ -1,7 +1,8 @@
 import { getCtx, json, jsonError, type Env } from "@/lib/server/context";
 import { requireAuth } from "@/lib/server/auth";
 import { getVideoRow, mapVideo, normalizeHashtags } from "@/lib/server/db";
-import { moderateText, moderateImage } from "@/lib/server/moderation";
+import { moderateText, moderateFrames } from "@/lib/server/moderation";
+import { withinDailyBudget, DAILY_LIMITS } from "@/lib/server/budget";
 import { createNotification } from "@/lib/server/notifications";
 import {
   uploadsToday,
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 // this well under the 128MB isolate limit.
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024; // 25MB
 const MAX_THUMB_BYTES = 3 * 1024 * 1024; // 3MB
+const MAX_EXTRA_FRAMES = 5;
 const VIDEO_TYPES = new Set(["video/mp4", "video/webm"]);
 const MAX_CAPTION = 300;
 const MAX_SOUND_NAME = 100;
@@ -45,6 +47,8 @@ export async function POST(request: Request) {
   const { env, ctx } = await getCtx();
   const user = await requireAuth(env);
   if (!user) return jsonError("Authentication required", 401);
+  // Invite-only: admins flip can_upload per account.
+  if (user.can_upload !== 1) return jsonError("Uploads are invite-only", 403);
 
   if (await overIpLimit(env.WRITE_RL, "upload")) {
     return jsonError("Too many requests", 429);
@@ -110,6 +114,16 @@ export async function POST(request: Request) {
   }
   const thumbBytes = new Uint8Array(await thumb.arrayBuffer());
 
+  // Extra sampled frames (client-extracted, best-effort). Same rules as the thumb.
+  const frameBytes: Uint8Array[] = [thumbBytes];
+  for (const f of form.getAll("frames").slice(0, MAX_EXTRA_FRAMES)) {
+    if (!(f instanceof File) || f.size === 0) continue;
+    if (f.type !== "image/jpeg" || f.size > MAX_THUMB_BYTES || !(await sniff(f, "image/jpeg"))) {
+      return jsonError("Invalid frame", 415);
+    }
+    frameBytes.push(new Uint8Array(await f.arrayBuffer()));
+  }
+
   // Sync text moderation of caption (+ hashtags, sound name). Fail-closed.
   const textMod = await moderateText(
     env,
@@ -119,6 +133,11 @@ export async function POST(request: Request) {
   if (textMod.errored) return jsonError(textMod.reason ?? "Moderation unavailable", 503);
   if (!textMod.ok) {
     return jsonError("Caption failed moderation", 422, { reason: textMod.reason });
+  }
+
+  // Site-wide daily ceiling on accepted uploads (storage + vision spend).
+  if (!(await withinDailyBudget(env, "uploads"))) {
+    return jsonError(`Uploads are closed for today (${DAILY_LIMITS.uploads}/day site-wide)`, 429);
   }
 
   // Store video to R2. Pass the Blob straight through (no arrayBuffer copy).
@@ -153,8 +172,8 @@ export async function POST(request: Request) {
   if (!inserted) return jsonError("Failed to create video", 500);
   const videoId = inserted.id;
 
-  // Async thumbnail vision moderation.
-  ctx.waitUntil(moderateThumb(env, videoId, user.id, thumbBytes));
+  // Async vision moderation over every sampled frame.
+  ctx.waitUntil(moderateThumb(env, videoId, user.id, frameBytes, [r2Key, thumbKey]));
 
   const row = await getVideoRow(env, videoId);
   const video = await mapVideo(env, row!, user.id);
@@ -162,21 +181,23 @@ export async function POST(request: Request) {
 }
 
 /**
- * Fail-CLOSED thumbnail moderation. AI error -> keep pending (admin review).
- * Pass -> live + moderation notify. Refusal -> rejected + moderation notify.
+ * Fail-CLOSED frame moderation. AI error -> keep pending (admin review).
+ * Pass -> live + notify. Refusal -> rejected + notify + R2 objects deleted
+ * so rejected uploads never occupy storage.
  */
 async function moderateThumb(
   env: Env,
   videoId: number,
   ownerId: number,
-  bytes: Uint8Array
+  frames: Uint8Array[],
+  r2Keys: string[]
 ): Promise<void> {
   try {
-    let result = await moderateImage(env, bytes);
+    let result = await moderateFrames(env, frames);
     if (result.errored) {
       // One more try before we strand it in pending.
       await new Promise((r) => setTimeout(r, 1500));
-      result = await moderateImage(env, bytes);
+      result = await moderateFrames(env, frames);
     }
     if (result.errored) {
       // Fail-closed: leave pending for admin. No status change.
@@ -194,6 +215,7 @@ async function moderateThumb(
       )
         .bind(videoId)
         .run();
+      await Promise.all(r2Keys.map((k) => env.MEDIA.delete(k).catch((err) => console.error("R2 delete error:", err))));
     }
     await createNotification(env, {
       userId: ownerId,
