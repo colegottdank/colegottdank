@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Heart, Bookmark, Share2, Flag, EyeOff, Link2, Gauge } from "lucide-react";
-import { Video } from "@/lib/data";
+import { Video, shareUrl } from "@/lib/api-client";
 import { toast } from "./Toast";
 
 interface LongPressMenuProps {
@@ -48,8 +48,7 @@ export function LongPressMenu({
   };
 
   const handleCopyLink = () => {
-    const url = `https://tiktok.com/@${video.username}/video/${video.id}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(shareUrl(video.id));
     toast.success("Link copied to clipboard");
     onClose();
   };
@@ -70,7 +69,7 @@ export function LongPressMenu({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white font-medium line-clamp-1">{video.caption}</p>
-            <p className="text-white/50 text-sm">@{video.username}</p>
+            <p className="text-white/50 text-sm">@{video.user.username}</p>
           </div>
         </div>
 

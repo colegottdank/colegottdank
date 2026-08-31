@@ -45,3 +45,5 @@ next-env.d.ts
 
 # OpenNext build output
 .open-next
+.dev.vars
+.wrangler/

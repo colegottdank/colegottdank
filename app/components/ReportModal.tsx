@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { X, ChevronRight, Flag, Check } from "lucide-react";
 import { reportReasons } from "@/lib/data";
+import { reports as reportsApi, ReportTargetType } from "@/lib/api-client";
 import { toast } from "./Toast";
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: "video" | "user" | "comment";
+  targetType: ReportTargetType;
   targetId: string | number;
   targetName?: string;
 }
@@ -17,26 +18,32 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetName 
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [additionalDetails, setAdditionalDetails] = useState("");
   const [step, setStep] = useState<"reason" | "details" | "submitted">("reason");
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    // Simulate API call
-    console.log("Report submitted:", {
-      targetType,
-      targetId,
-      reason: selectedReason,
-      details: additionalDetails
-    });
-    
-    setStep("submitted");
-    
-    setTimeout(() => {
-      onClose();
-      setStep("reason");
-      setSelectedReason(null);
-      setAdditionalDetails("");
-    }, 2000);
+  const handleSubmit = async () => {
+    if (!selectedReason) return;
+    setSubmitting(true);
+    try {
+      await reportsApi.submit({
+        targetType,
+        targetId,
+        reason: selectedReason,
+        details: additionalDetails.trim() || undefined,
+      });
+      setStep("submitted");
+      setTimeout(() => {
+        onClose();
+        setStep("reason");
+        setSelectedReason(null);
+        setAdditionalDetails("");
+      }, 2000);
+    } catch {
+      toast.error("Couldn't submit report. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getTargetLabel = () => {
@@ -128,9 +135,10 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetName 
 
               <button
                 onClick={handleSubmit}
-                className="w-full bg-[#fe2c55] text-white py-3 rounded-lg font-semibold hover:bg-[#fe2c55]/90 transition-colors"
+                disabled={submitting}
+                className="w-full bg-[#fe2c55] text-white py-3 rounded-lg font-semibold hover:bg-[#fe2c55]/90 transition-colors disabled:opacity-50"
               >
-                Submit report
+                {submitting ? "Submitting…" : "Submit report"}
               </button>
 
               <button

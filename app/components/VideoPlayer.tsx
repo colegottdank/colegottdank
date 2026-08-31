@@ -11,6 +11,10 @@ interface VideoPlayerProps {
   muted: boolean;
   playbackRate?: number;
   loop?: boolean;
+  /** Thumbnail shown before playback so swiping never flashes black. */
+  poster?: string | null;
+  /** Preload the full video (upcoming videos in the feed), not just metadata. */
+  preloadAuto?: boolean;
   onTogglePause: () => void;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onSeek?: (time: number) => void;
@@ -25,6 +29,8 @@ export function VideoPlayer({
   muted,
   playbackRate = 1,
   loop = true,
+  poster,
+  preloadAuto = false,
   onTogglePause,
   onTimeUpdate,
   onSeek,
@@ -189,7 +195,8 @@ export function VideoPlayer({
         playsInline
         muted={muted}
         onClick={onTogglePause}
-        preload={isActive ? "auto" : "metadata"}
+        poster={poster || undefined}
+        preload={isActive || preloadAuto ? "auto" : "metadata"}
         style={{ display: hasError ? 'none' : 'block' }}
       />
       
