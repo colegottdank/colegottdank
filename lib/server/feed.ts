@@ -2,19 +2,29 @@ import type { Env } from "./context";
 import type { UserRow, VideoRow } from "./db";
 
 // ---------------------------------------------------------------------------
-// Scored "For You" ranking
+// "For You" ranking, remix edition
 // ---------------------------------------------------------------------------
 //
-// score = base / (ageHours + 6)^1.3
-//   base = 4*likes + 6*comments + 5*saves + log10(views + 1)
-// then: *1.5 if the creator is followed, *0.2 if the viewer already viewed it.
+// Every feed session (seed) rolls its own personality, so refreshes feel
+// different instead of replaying one global leaderboard:
 //
-// Ordering is score-WEIGHTED SAMPLING (Efraimidis-Spirakis: sort by
-// u^(1/score) with u from a seeded RNG), not a plain sort — so every feed
-// session deals a fresh order biased toward high scores, TikTok-style. The
-// seed rides inside the cursor (seed*OFFSET_SPAN + offset), which keeps
-// pagination within one session deterministic and duplicate-free while a
-// refresh (no cursor -> new seed) reshuffles. See API-CONTRACT.md.
+//   1. ARCHETYPE — the seed picks one of four scoring moods:
+//        bangers    engagement-heavy, mild recency decay
+//        fresh      strong recency bias
+//        deep-cuts  boosts low-view videos (hidden gems)
+//        chaos      near-uniform lottery
+//   2. TEMPERATURE — the seed also draws t in [0.65, 1.45]; weights are raised
+//      to 1/t, so some sessions are sharp, some mushy.
+//   3. WEIGHTED SAMPLING — Efraimidis-Spirakis (sort by u^(1/w)) over the
+//      candidate pool: high weights win more often, never deterministically.
+//   4. DIVERSITY PASS — never more than 2 consecutive videos from one creator.
+//   5. WILDCARDS — every 5th slot is an exploration pick pulled from the
+//      below-median-views half of the pool, so new/quiet videos surface.
+//
+// Everything is a pure function of (seed, pool, viewer signals): pagination
+// within one session stays deterministic and duplicate-free, while a refresh
+// (no cursor -> new seed) deals a genuinely new hand. Cursor packing is
+// unchanged: seed*OFFSET_SPAN + offset. See API-CONTRACT.md.
 
 const CANDIDATE_POOL = 500;
 export const OFFSET_SPAN = 100000; // cursor = seed * OFFSET_SPAN + offset
@@ -41,6 +51,142 @@ interface CandidateRow extends VideoRow {
   comment_count: number;
   save_count: number;
   age_hours: number;
+}
+
+interface SessionMood {
+  archetype: "bangers" | "fresh" | "deep-cuts" | "chaos";
+  temperature: number;
+}
+
+/** The seed rolls the session's scoring personality. Exported for tests. */
+export function sessionMood(rand: () => number): SessionMood {
+  const roll = rand();
+  const archetype =
+    roll < 0.35 ? "bangers" : roll < 0.6 ? "fresh" : roll < 0.85 ? "deep-cuts" : "chaos";
+  const temperature = 0.65 + rand() * 0.8; // [0.65, 1.45)
+  return { archetype, temperature };
+}
+
+interface Signals {
+  followed: Set<number>;
+  viewed: Set<number>;
+}
+
+function weigh(row: CandidateRow, mood: SessionMood, signals: Signals): number {
+  const likes = row.like_count ?? 0;
+  const comments = row.comment_count ?? 0;
+  const saves = row.save_count ?? 0;
+  const views = row.views ?? 0;
+  const ageHours = Math.max(row.age_hours ?? 0, 0);
+  const engagement = 4 * likes + 6 * comments + 5 * saves + Math.log10(views + 1);
+
+  let w: number;
+  switch (mood.archetype) {
+    case "bangers":
+      w = Math.pow(engagement + 0.5, 1.2) / Math.pow(ageHours + 8, 0.9);
+      break;
+    case "fresh":
+      w = (engagement + 2) / Math.pow(ageHours + 4, 1.8);
+      break;
+    case "deep-cuts":
+      w = (engagement + 60 / (views + 12)) / Math.pow(ageHours + 8, 1.0);
+      break;
+    case "chaos":
+      w = 1 + (0.15 * engagement) / Math.pow(ageHours + 8, 1.1);
+      break;
+  }
+
+  if (signals.followed.has(row.user_id)) w *= 1.5;
+  if (signals.viewed.has(row.id)) w *= 0.2;
+  return w;
+}
+
+const MAX_CREATOR_RUN = 2;
+const WILDCARD_EVERY = 5; // every 5th slot is an exploration pick
+
+/**
+ * Build the session's full ordering of the pool: sample -> diversity pass ->
+ * wildcard injection. Pure in (seed via rand, pool, signals). Exported for tests.
+ */
+export function orderPool(
+  pool: CandidateRow[],
+  rand: () => number,
+  mood: SessionMood,
+  signals: Signals
+): CandidateRow[] {
+  if (pool.length === 0) return [];
+
+  // 1-3. Weighted sampling without replacement, temperature applied.
+  const keyed = pool.map((row) => {
+    const w = Math.pow(Math.max(weigh(row, mood, signals), 0) + 0.01, 1 / mood.temperature);
+    return { row, key: Math.pow(rand(), 1 / w) };
+  });
+  keyed.sort((a, b) => b.key - a.key);
+  let order = keyed.map((k) => k.row);
+
+  // 4. Diversity: cap consecutive same-creator runs at MAX_CREATOR_RUN.
+  order = diversify(order);
+
+  // 5. Wildcards: every 5th slot becomes an exploration pick from the
+  // below-median-views half, shuffled by the same seeded rng.
+  const sortedViews = order.map((r) => r.views ?? 0).sort((a, b) => a - b);
+  const median = sortedViews[Math.floor(sortedViews.length / 2)] ?? 0;
+  const quiet = order.filter((r) => (r.views ?? 0) <= median);
+  for (let i = quiet.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [quiet[i], quiet[j]] = [quiet[j], quiet[i]];
+  }
+  const quietIds = new Set<number>();
+  const picks: CandidateRow[] = [];
+  for (const q of quiet) {
+    if (picks.length >= Math.floor(order.length / WILDCARD_EVERY)) break;
+    picks.push(q);
+    quietIds.add(q.id);
+  }
+  if (picks.length > 0) {
+    const rest = order.filter((r) => !quietIds.has(r.id));
+    const merged: CandidateRow[] = [];
+    let ri = 0;
+    let pi = 0;
+    for (let slot = 0; ri < rest.length || pi < picks.length; slot++) {
+      const wildcardSlot = slot % WILDCARD_EVERY === WILDCARD_EVERY - 2; // slots 3, 8, 13...
+      if (wildcardSlot && pi < picks.length) merged.push(picks[pi++]);
+      else if (ri < rest.length) merged.push(rest[ri++]);
+      else if (pi < picks.length) merged.push(picks[pi++]);
+    }
+    order = diversify(merged);
+  }
+
+  return order;
+}
+
+/** Stable pass that defers items to keep same-creator runs <= MAX_CREATOR_RUN. */
+function diversify(order: CandidateRow[]): CandidateRow[] {
+  const out: CandidateRow[] = [];
+  const deferred: CandidateRow[] = [];
+  const runOk = (row: CandidateRow) => {
+    const n = out.length;
+    return !(
+      n >= MAX_CREATOR_RUN &&
+      out[n - 1].user_id === row.user_id &&
+      out[n - 2].user_id === row.user_id
+    );
+  };
+  for (const row of order) {
+    // Deferred items get first shot once the run breaks.
+    while (deferred.length > 0 && runOk(deferred[0])) out.push(deferred.shift()!);
+    if (runOk(row)) out.push(row);
+    else deferred.push(row);
+  }
+  while (deferred.length > 0) {
+    const i = deferred.findIndex(runOk);
+    if (i === -1) {
+      out.push(...deferred); // pool is dominated by one creator; give up gracefully
+      break;
+    }
+    out.push(deferred.splice(i, 1)[0]);
+  }
+  return out;
 }
 
 /**
@@ -91,28 +237,10 @@ export async function scoredForYou(
   }
 
   const rand = mulberry32(seed);
-  const scored = pool.map((row) => {
-    const likes = row.like_count ?? 0;
-    const comments = row.comment_count ?? 0;
-    const saves = row.save_count ?? 0;
-    const views = row.views ?? 0;
-    const ageHours = Math.max(row.age_hours ?? 0, 0);
+  const mood = sessionMood(rand);
+  const order = orderPool(pool, rand, mood, { followed, viewed });
 
-    const base = 4 * likes + 6 * comments + 5 * saves + Math.log10(views + 1);
-    let score = base / Math.pow(ageHours + 6, 1.3);
-    if (followed.has(row.user_id)) score *= 1.5;
-    if (viewed.has(row.id)) score *= 0.2;
-
-    // Weighted sampling without replacement: order by u^(1/w). Higher scores
-    // win more often but never deterministically; epsilon keeps zero-engagement
-    // videos in the lottery.
-    const key = Math.pow(rand(), 1 / (score + 0.01));
-    return { row, key };
-  });
-
-  scored.sort((a, b) => b.key - a.key);
-
-  return scored.slice(offset, offset + limit).map((s) => stripCandidate(s.row));
+  return order.slice(offset, offset + limit).map(stripCandidate);
 }
 
 /** Drop the score-only columns so the return matches VideoRow. */
