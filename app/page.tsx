@@ -587,10 +587,12 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
               <MusicNoteIcon />
             </div>
             <p className="text-white font-semibold mb-1">No videos yet</p>
-            <p className="text-white/50 text-sm mb-5">Be the first to post.</p>
-            <button onClick={openCreate} className="px-6 py-2.5 bg-[#fe2c55] text-white rounded-md font-semibold text-sm">
-              Upload a video
-            </button>
+            <p className="text-white/50 text-sm mb-5">Check back soon.</p>
+            {user?.canUpload && (
+              <button onClick={openCreate} className="px-6 py-2.5 bg-[#fe2c55] text-white rounded-md font-semibold text-sm">
+                Upload a video
+              </button>
+            )}
           </div>
         ) : (
           <div
@@ -870,7 +872,8 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
             active={activeNavTab === "discover"}
             onClick={openDiscover}
           />
-          {/* Create button */}
+          {/* Create button: uploads are Cole-only, so everyone else gets a spacer */}
+          {user?.canUpload ? (
           <button onClick={openCreate} className="relative w-[46px] h-[30px] mt-[1px] active:scale-95 transition">
             <div className="absolute inset-y-0 left-0 right-[6px] rounded-[8px] bg-[#25f4ee]" />
             <div className="absolute inset-y-0 left-[6px] right-0 rounded-[8px] bg-[#fe2c55]" />
@@ -880,6 +883,9 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
               </svg>
             </div>
           </button>
+          ) : (
+            <div className="w-[46px] h-[30px] mt-[1px]" />
+          )}
           <NavBtn
             icon={
               <div className="relative">
