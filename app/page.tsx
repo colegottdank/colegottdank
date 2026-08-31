@@ -600,7 +600,13 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {videos.map((video, index) => (
+            {videos.map((video, index) => {
+              // Perf: with 200+ videos loaded, mounting a <video> per row
+              // makes swiping progressively janky. Only rows within the
+              // window render a real player; the rest are poster placeholders
+              // of identical height so snap-scroll and index math don't change.
+              const inWindow = Math.abs(index - currentIndex) <= 3;
+              return (
               <div
                 key={`${video.id}-${index}`}
                 className="h-full w-full snap-start relative"
@@ -614,20 +620,29 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
                 onTouchMove={handleLongPressMove}
                 onContextMenu={handleContextMenu}
               >
-                <VideoPlayer
-                  src={video.url}
-                  videoId={video.id}
-                  isActive={index === currentIndex}
-                  isPaused={!!isPaused[video.id]}
-                  muted={muted}
-                  playbackRate={playbackRate}
-                  loop={false}
-                  poster={video.thumbUrl}
-                  preloadAuto={index > currentIndex && index <= currentIndex + 2}
-                  onTogglePause={() => setIsPaused((prev) => ({ ...prev, [video.id]: !prev[video.id] }))}
-                  onToggleMute={() => setMuted((m) => !m)}
-                  onEnded={handleVideoEnded}
-                />
+                {inWindow ? (
+                  <VideoPlayer
+                    src={video.url}
+                    videoId={video.id}
+                    isActive={index === currentIndex}
+                    isPaused={!!isPaused[video.id]}
+                    muted={muted}
+                    playbackRate={playbackRate}
+                    loop={false}
+                    poster={video.thumbUrl}
+                    preloadAuto={index > currentIndex && index <= currentIndex + 2}
+                    onTogglePause={() => setIsPaused((prev) => ({ ...prev, [video.id]: !prev[video.id] }))}
+                    onToggleMute={() => setMuted((m) => !m)}
+                    onEnded={handleVideoEnded}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-black">
+                    {video.thumbUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={video.thumbUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                )}
 
                 {/* Legibility scrims */}
                 <div className="absolute top-0 inset-x-0 h-[100px] bg-gradient-to-b from-black/50 via-black/20 to-transparent pointer-events-none" />
@@ -735,7 +750,8 @@ function TikTokMobile({ framed, onOpenAbout }: { framed: boolean; onOpenAbout: (
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
