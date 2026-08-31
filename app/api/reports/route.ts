@@ -1,4 +1,7 @@
 import { getCtx, json, jsonError, type Env } from "@/lib/server/context";
+import { moderateImage, moderateText } from "@/lib/server/moderation";
+import { createNotification } from "@/lib/server/notifications";
+import { getVideoRow } from "@/lib/server/db";
 import { getSessionUser } from "@/lib/server/auth";
 import { overIpLimit } from "@/lib/server/ratelimit";
 import { hasControlChars, hasLineBreaks } from "@/lib/server/validate";
@@ -11,7 +14,7 @@ const MAX_REASON = 100;
 const MAX_DETAILS = 1000;
 
 export async function POST(request: Request) {
-  const { env } = await getCtx();
+  const { env, ctx } = await getCtx();
   const user = await getSessionUser(env);
   if (!user) return jsonError("Authentication required", 401);
 
@@ -60,43 +63,89 @@ export async function POST(request: Request) {
     .bind(user.id, targetType, targetId, reason, details)
     .run();
 
-  // Auto-hide videos/comments at 3+ distinct open reports.
-  if (targetType === "video" || targetType === "comment") {
+  // At 3+ distinct established reporters: comments are hidden outright;
+  // videos get an automatic AI re-check (nobody reviews a queue here).
+  if (targetType === "comment") {
     await maybeAutoHide(env, targetType, targetId);
+  } else if (targetType === "video") {
+    if (await reportThresholdMet(env, targetType, targetId)) {
+      ctx.waitUntil(recheckReportedVideo(env, targetId));
+    }
   }
 
   return json({ ok: true });
 }
 
 /**
- * Auto-hide only counts reporters whose account is at least a day old, so
- * three freshly-made sock puppets cannot take down arbitrary content.
+ * Zero-touch handling for a reported video: re-run moderation on the stored
+ * thumbnail + caption. Definite fail -> removed (R2 kept for recovery) + owner
+ * notified. Pass -> stays live. Either way the open reports are resolved so
+ * the next report starts a fresh count. AI error -> reports stay open and the
+ * next report retries.
  */
-async function maybeAutoHide(
+async function recheckReportedVideo(env: Env, videoId: number): Promise<void> {
+  try {
+    const video = await getVideoRow(env, videoId);
+    if (!video || video.status !== "live") return;
+
+    const checks: Promise<{ ok: boolean; errored?: boolean }>[] = [
+      moderateText(env, [video.caption, video.hashtags, video.sound_name].filter(Boolean).join(" "), "caption"),
+    ];
+    if (video.thumb_key) {
+      const obj = await env.MEDIA.get(video.thumb_key);
+      if (obj) {
+        const bytes = new Uint8Array(await obj.arrayBuffer());
+        checks.push(moderateImage(env, bytes));
+      }
+    }
+    const results = await Promise.all(checks);
+    if (results.some((r) => r.errored)) return; // leave reports open; retried on the next report
+
+    if (results.some((r) => !r.ok)) {
+      await env.DB.prepare(
+        "UPDATE videos SET status = 'removed' WHERE id = ? AND status = 'live'"
+      )
+        .bind(videoId)
+        .run();
+      await createNotification(env, { userId: video.user_id, type: "moderation", videoId });
+    }
+    await env.DB.prepare(
+      "UPDATE reports SET status = 'resolved' WHERE target_type = 'video' AND target_id = ? AND status = 'open'"
+    )
+      .bind(videoId)
+      .run();
+  } catch (err) {
+    console.error("recheckReportedVideo error:", err);
+  }
+}
+
+/**
+ * Only reporters whose account is at least a day old count, so three
+ * freshly-made sock puppets cannot trigger anything.
+ */
+async function reportThresholdMet(
   env: Env,
   targetType: string,
   targetId: number
-): Promise<void> {
+): Promise<boolean> {
   const row = await env.DB.prepare(
     "SELECT COUNT(DISTINCT r.reporter_id) AS c FROM reports r JOIN users u ON u.id = r.reporter_id WHERE r.target_type = ? AND r.target_id = ? AND r.status = 'open' AND u.status = 'active' AND u.created_at <= datetime('now','-1 day')"
   )
     .bind(targetType, targetId)
     .first<{ c: number }>();
-  if ((row?.c ?? 0) < AUTO_HIDE_THRESHOLD) return;
+  return (row?.c ?? 0) >= AUTO_HIDE_THRESHOLD;
+}
 
-  if (targetType === "video") {
-    // Hide pending for admin review (only if currently live).
-    await env.DB.prepare(
-      "UPDATE videos SET status = 'pending' WHERE id = ? AND status = 'live'"
-    )
-      .bind(targetId)
-      .run();
-  } else {
-    // Comments have no 'pending' state; hide via 'removed' (see deviation note).
-    await env.DB.prepare(
-      "UPDATE comments SET status = 'removed' WHERE id = ? AND status = 'live'"
-    )
-      .bind(targetId)
-      .run();
-  }
+async function maybeAutoHide(
+  env: Env,
+  targetType: string,
+  targetId: number
+): Promise<void> {
+  if (!(await reportThresholdMet(env, targetType, targetId))) return;
+  // Comments have no 'pending' state; hide via 'removed'.
+  await env.DB.prepare(
+    "UPDATE comments SET status = 'removed' WHERE id = ? AND status = 'live'"
+  )
+    .bind(targetId)
+    .run();
 }
