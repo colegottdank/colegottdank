@@ -100,6 +100,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [modReason, setModReason] = useState<string | null>(null);
   const [phase, setPhase] = useState<"compose" | "review">("compose");
+  const [upgradeFailed, setUpgradeFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -114,6 +115,7 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
     setError(null);
     setModReason(null);
     setPhase("compose");
+    setUpgradeFailed(false);
   };
 
   const close = () => { reset(); onClose(); };
@@ -178,20 +180,68 @@ export function CreateModal({ isOpen, onClose, onPosted }: CreateModalProps) {
 
   if (!isOpen) return null;
 
-  // Invite-only uploads: show the gate instead of the form.
+  // Uploads stay invite-only. Everyone else gets the fake upgrade flow.
   if (user && !user.canUpload) {
     return (
       <div className="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-        <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mb-5">
-          <Upload className="w-10 h-10 text-white/60" />
-        </div>
-        <h3 className="text-white text-xl font-semibold mb-2">Uploads are invite-only</h3>
-        <p className="text-white/60 text-sm max-w-xs mb-8">
-          This is one guy&rsquo;s personal site. Comments, likes and follows are open to everyone; posting videos needs a nod from Cole.
-        </p>
-        <button onClick={close} className="px-8 py-3 bg-white/10 text-white rounded-lg font-semibold text-sm">
-          Got it
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Close"
+          className="absolute top-4 right-4 p-2 text-white/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-full"
+        >
+          <X className="w-6 h-6" />
         </button>
+
+        {upgradeFailed ? (
+          <>
+            <div className="w-20 h-20 rounded-full bg-[#fe2c55]/15 border border-[#fe2c55]/30 flex items-center justify-center mb-5">
+              <X className="w-10 h-10 text-[#fe2c55]" />
+            </div>
+            <h3 className="text-white text-xl font-semibold mb-2">Payment failed successfully</h3>
+            <p className="text-white/60 text-sm max-w-xs mb-8">
+              We couldn&rsquo;t charge you $0 because this plan doesn&rsquo;t exist. Cole is still the only person who can upload.
+            </p>
+            <button
+              type="button"
+              onClick={close}
+              className="w-full max-w-xs px-8 py-3 bg-white/10 hover:bg-white/15 text-white rounded-lg font-semibold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              Devastating
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mb-5">
+              <Upload className="w-10 h-10 text-white/70" />
+            </div>
+            <h3 className="text-white text-xl font-semibold mb-2">Unlock uploads</h3>
+            <p className="text-white/60 text-sm max-w-xs mb-6">
+              Join the exclusive tier for people who want to post on someone else&rsquo;s personal website.
+            </p>
+            <div className="w-full max-w-xs rounded-2xl border border-white/15 bg-white/[0.06] p-5 mb-4 text-left">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-white font-semibold">Cole+ Pro</span>
+                <span className="text-white text-2xl font-bold">$0<span className="text-white/40 text-sm font-normal">/mo</span></span>
+              </div>
+              <p className="text-white/45 text-xs mt-2">Includes one upload button. Results may vary.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUpgradeFailed(true)}
+              className="w-full max-w-xs px-8 py-3 bg-[#fe2c55] hover:bg-[#fe2c55]/90 text-white rounded-lg font-semibold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fe2c55] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            >
+              Upgrade for $0
+            </button>
+            <button
+              type="button"
+              onClick={close}
+              className="mt-3 px-6 py-2 text-white/50 hover:text-white text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-lg"
+            >
+              Maybe later
+            </button>
+          </>
+        )}
       </div>
     );
   }
