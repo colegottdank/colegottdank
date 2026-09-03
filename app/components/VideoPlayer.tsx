@@ -243,7 +243,8 @@ export function VideoPlayer({
       {/* Volume Button - Clickable */}
       <button
         onClick={onToggleMute}
-        className="absolute top-[74px] right-2 text-white/70 hover:text-white z-20 p-2"
+        aria-label={muted ? "Unmute" : "Mute"}
+        className="absolute top-[44px] right-2 text-white/70 hover:text-white z-20 p-2"
       >
         {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
       </button>
