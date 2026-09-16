@@ -100,7 +100,7 @@ Hashtag matching against the space-separated `hashtags` column must match whole 
 
 `tab=foryou` is a scored ranking, not chronological. `tab=following` stays chronological (id cursor descending), unchanged.
 
-Candidate pool: latest 500 live+public videos, excluding the viewer's own when logged in. Each video is scored in JS:
+Candidate pool: the latest 350 live+public videos plus up to 150 older videos with the strongest proven engagement, excluding the viewer's own when logged in. This keeps older viral posts eligible even after many new uploads. Each video is scored in JS:
 
 ```
 base  = 4*likes + 6*comments + 5*saves + log10(views + 1)
@@ -110,6 +110,8 @@ score *= 0.2   if the viewer already viewed it (video_views)
 ```
 
 `ageHours` comes from `(julianday('now') - julianday(created_at)) * 24`. Ordering is score-weighted sampling without replacement (Efraimidis-Spirakis: sort by `u^(1/(score+0.01))`, `u` from a seeded mulberry32 RNG), then sliced `[offset, offset+limit)`. Every fresh session gets a new seed → a genuinely different order, still biased toward high scores.
+
+To keep the feed organic while restoring social proof, the strongest fifth of eligible older posts is shuffled per session and one is inserted at slot 2, then about every 6 slots. The existing creator-diversity pass and quiet-video wildcards still apply, so the result is neither a fixed “greatest hits” list nor purely engagement-sorted.
 
 Cursor semantics differ by tab and never cross-contaminate:
 - **foryou**: `cursor` is opaque `seed*100000 + offset`. First request (no cursor) mints a random seed; `nextCursor` carries it forward, so pages within one session share the seed (deterministic order, no duplicates) while a refresh reshuffles. `nextCursor = null` past the pool boundary.

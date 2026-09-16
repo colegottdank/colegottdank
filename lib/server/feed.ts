@@ -17,8 +17,10 @@ import type { UserRow, VideoRow } from "./db";
 //      to 1/t, so some sessions are sharp, some mushy.
 //   3. WEIGHTED SAMPLING — Efraimidis-Spirakis (sort by u^(1/w)) over the
 //      candidate pool: high weights win more often, never deterministically.
-//   4. DIVERSITY PASS — never more than 2 consecutive videos from one creator.
-//   5. WILDCARDS — every 5th slot is an exploration pick pulled from the
+//   4. RESURFACING — one early slot, then roughly every 6th slot, is reserved
+//      for an older video with proven likes/comments/saves.
+//   5. DIVERSITY PASS — never more than 2 consecutive videos from one creator.
+//   6. WILDCARDS — every 5th slot is an exploration pick pulled from the
 //      below-median-views half of the pool, so new/quiet videos surface.
 //
 // Everything is a pure function of (seed, pool, viewer signals): pagination
@@ -26,7 +28,8 @@ import type { UserRow, VideoRow } from "./db";
 // (no cursor -> new seed) deals a genuinely new hand. Cursor packing is
 // unchanged: seed*OFFSET_SPAN + offset. See API-CONTRACT.md.
 
-const CANDIDATE_POOL = 500;
+const RECENT_CANDIDATES = 350;
+const EVERGREEN_CANDIDATES = 150;
 export const OFFSET_SPAN = 100000; // cursor = seed * OFFSET_SPAN + offset
 export const MAX_SEED = 89999;
 
@@ -101,12 +104,25 @@ function weigh(row: CandidateRow, mood: SessionMood, signals: Signals): number {
   return w;
 }
 
+/** Social proof used to identify older posts that are worth resurfacing. */
+function socialProof(row: CandidateRow): number {
+  return (
+    4 * (row.like_count ?? 0) +
+    7 * (row.comment_count ?? 0) +
+    5 * (row.save_count ?? 0) +
+    Math.log10((row.views ?? 0) + 1)
+  );
+}
+
 const MAX_CREATOR_RUN = 2;
 const WILDCARD_EVERY = 5; // every 5th slot is an exploration pick
+const RESURFACE_EVERY = 6;
+const RESURFACE_MIN_AGE_HOURS = 24;
 
 /**
- * Build the session's full ordering of the pool: sample -> diversity pass ->
- * wildcard injection. Pure in (seed via rand, pool, signals). Exported for tests.
+ * Build the session's full ordering of the pool: sample -> resurfacing ->
+ * diversity pass -> wildcard injection. Pure in (seed via rand, pool, signals).
+ * Exported for tests.
  */
 export function orderPool(
   pool: CandidateRow[],
@@ -124,10 +140,37 @@ export function orderPool(
   keyed.sort((a, b) => b.key - a.key);
   let order = keyed.map((k) => k.row);
 
-  // 4. Diversity: cap consecutive same-creator runs at MAX_CREATOR_RUN.
+  // 4. Give proven older posts predictable chances near the top without
+  // turning the feed into a static leaderboard. We draw from the strongest
+  // fifth of eligible older posts, but shuffle that shortlist per session.
+  const eligible = pool
+    .filter((row) => row.age_hours >= RESURFACE_MIN_AGE_HOURS && socialProof(row) > 0)
+    .sort((a, b) => socialProof(b) - socialProof(a));
+  const shortlistSize = Math.max(1, Math.ceil(eligible.length / 5));
+  const resurfacing = eligible.slice(0, shortlistSize);
+  for (let i = resurfacing.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [resurfacing[i], resurfacing[j]] = [resurfacing[j], resurfacing[i]];
+  }
+  if (resurfacing.length > 0) {
+    const resurfacingIds = new Set(resurfacing.map((row) => row.id));
+    const rest = order.filter((row) => !resurfacingIds.has(row.id));
+    const merged: CandidateRow[] = [];
+    let ri = 0;
+    let ei = 0;
+    for (let slot = 0; ri < rest.length || ei < resurfacing.length; slot++) {
+      const resurfacingSlot = slot === 1 || (slot > 1 && (slot - 1) % RESURFACE_EVERY === 0);
+      if (resurfacingSlot && ei < resurfacing.length) merged.push(resurfacing[ei++]);
+      else if (ri < rest.length) merged.push(rest[ri++]);
+      else if (ei < resurfacing.length) merged.push(resurfacing[ei++]);
+    }
+    order = merged;
+  }
+
+  // 5. Diversity: cap consecutive same-creator runs at MAX_CREATOR_RUN.
   order = diversify(order);
 
-  // 5. Wildcards: every 5th slot becomes an exploration pick from the
+  // 6. Wildcards: every 5th slot becomes an exploration pick from the
   // below-median-views half, shuffled by the same seeded rng.
   const sortedViews = order.map((r) => r.views ?? 0).sort((a, b) => a - b);
   const median = sortedViews[Math.floor(sortedViews.length / 2)] ?? 0;
@@ -201,17 +244,34 @@ export async function scoredForYou(
   limit: number
 ): Promise<VideoRow[]> {
   const poolSql = `
-    SELECT
+    WITH ranked_videos AS (
+      SELECT
       v.*,
       (SELECT COUNT(*) FROM likes l WHERE l.video_id = v.id) AS like_count,
       (SELECT COUNT(*) FROM comments c WHERE c.video_id = v.id AND c.status = 'live') AS comment_count,
       (SELECT COUNT(*) FROM saves s WHERE s.video_id = v.id) AS save_count,
       (julianday('now') - julianday(v.created_at)) * 24.0 AS age_hours
-    FROM videos v
-    WHERE v.status = 'live' AND v.visibility = 'public'
-      ${viewer ? "AND v.user_id != ?" : ""}
-    ORDER BY v.id DESC
-    LIMIT ${CANDIDATE_POOL}
+      FROM videos v
+      WHERE v.status = 'live' AND v.visibility = 'public'
+        ${viewer ? "AND v.user_id != ?" : ""}
+    ), candidate_ids AS (
+      SELECT id FROM (
+        SELECT id FROM ranked_videos
+        ORDER BY id DESC
+        LIMIT ${RECENT_CANDIDATES}
+      )
+      UNION
+      SELECT id FROM (
+        SELECT id FROM ranked_videos
+        WHERE age_hours >= ${RESURFACE_MIN_AGE_HOURS}
+          AND (like_count > 0 OR comment_count > 0 OR save_count > 0)
+        ORDER BY (4 * like_count + 7 * comment_count + 5 * save_count + views / 1000.0) DESC
+        LIMIT ${EVERGREEN_CANDIDATES}
+      )
+    )
+    SELECT ranked_videos.*
+    FROM ranked_videos
+    JOIN candidate_ids USING (id)
   `;
 
   const poolStmt = viewer
